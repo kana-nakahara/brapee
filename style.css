@@ -1,0 +1,234 @@
+/* ブラッピー マイページ — スマートフォン前提（LINEアプリ内ブラウザで開く） */
+:root{
+  --bg:#f5f6f8; --card:#fff; --ink:#1f2328; --sub:#6b7280; --line:#e5e7eb;
+  --brand:#1f2937; --accent:#0f766e; --accent-ink:#fff;
+  --line-green:#06c755; --danger:#b42318; --ok:#047857;
+  --r:14px; --pad:16px;
+}
+*{box-sizing:border-box}
+/* 🔴 作者スタイルの display は UA の [hidden]{display:none} を上書きする。
+   .tabbar{display:flex} / .btn{display:flex} のせいで hidden を立てても出たままになる
+   （ログイン画面のタブバー・LIFF外での「トークに戻る」で実害。260919 実測）。 */
+[hidden]{display:none!important}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",
+              "Noto Sans JP","Yu Gothic UI",sans-serif;
+  font-size:15px; line-height:1.7; -webkit-text-size-adjust:100%;
+  padding-bottom:calc(64px + env(safe-area-inset-bottom));
+}
+button,input,select{font:inherit;color:inherit}
+
+/* ---- ヘッダ / タブバー ---- */
+.hd{
+  position:sticky; top:0; z-index:20; display:flex; align-items:center;
+  justify-content:space-between; gap:8px;
+  padding:10px var(--pad); background:var(--brand); color:#fff;
+  padding-top:calc(10px + env(safe-area-inset-top));
+}
+.hd-logo{font-weight:700; letter-spacing:.06em}
+.hd-out{background:none;border:1px solid rgba(255,255,255,.35);color:#fff;
+  border-radius:999px;padding:4px 12px;font-size:12px}
+
+.tabbar{
+  position:fixed; left:0; right:0; bottom:0; z-index:20; display:flex;
+  background:#fff; border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.tabbar button{
+  flex:1; background:none; border:0; padding:8px 0 10px;
+  font-size:11px; color:var(--sub); display:flex; flex-direction:column;
+  align-items:center; gap:2px;
+}
+.tabbar button span{font-size:19px; line-height:1}
+.tabbar button.on{color:var(--accent); font-weight:700}
+
+/* ---- レイアウト ---- */
+.wrap{max-width:480px; margin:0 auto; padding:var(--pad)}
+.loading{color:var(--sub); text-align:center; padding:48px 0}
+.card{background:var(--card); border-radius:var(--r); padding:var(--pad);
+  margin-bottom:14px; box-shadow:0 1px 2px rgba(16,24,40,.06)}
+.card.center{text-align:center}
+.t1{font-size:18px; margin:0 0 6px}
+.t2{font-size:14px; margin:18px 0 8px; color:var(--sub); font-weight:700}
+.lead{margin:0 0 14px; color:var(--sub); font-size:13px}
+.note{font-size:12px; color:var(--sub); margin:6px 0 0}
+.fine{font-size:11px; color:var(--sub); line-height:1.6; margin:14px 4px}
+.err{color:var(--danger); font-size:13px; margin:10px 0 0}
+.ok{color:var(--ok); font-size:13px; margin:10px 0 0}
+.empty{color:var(--sub); text-align:center; padding:24px 0; font-size:13px}
+.back{background:none;border:0;color:var(--sub);padding:4px 0 10px;font-size:13px}
+
+/* ---- ボタン ---- */
+.btn{display:flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; min-height:50px; border:0; border-radius:12px;
+  font-size:16px; font-weight:700; text-decoration:none; margin-top:14px;
+  cursor:pointer}
+.btn-primary{background:var(--accent); color:var(--accent-ink)}
+.btn-primary:disabled{opacity:.5}
+.btn-line{background:var(--line-green); color:#fff}
+.line-ico{background:#fff;color:var(--line-green);border-radius:5px;
+  padding:1px 6px;font-size:12px;font-weight:800}
+.sep{position:relative;text-align:center;margin:20px 0 6px;color:var(--sub);
+  font-size:12px}
+.sep::before{content:"";position:absolute;left:0;right:0;top:50%;
+  border-top:1px solid var(--line)}
+.sep span{position:relative;background:var(--card);padding:0 10px}
+
+/* ---- 挨拶 ---- */
+.greet{padding:2px 4px 12px}
+.greet-name{font-size:17px}
+.greet-sub{font-size:12px; color:var(--sub)}
+
+/* ---- 案件カード ---- */
+.case-hd{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.rcpt{font-size:13px;color:var(--sub);font-variant-numeric:tabular-nums}
+.pill{font-size:12px;font-weight:700;color:#fff;background:var(--sub);
+  border-radius:999px;padding:3px 12px;white-space:nowrap}
+
+/* フロー帯（ステータスは必ず帯で見せる） */
+.flow{display:flex; list-style:none; margin:14px 0 4px; padding:0; gap:2px}
+.flow li{flex:1; text-align:center; font-size:9.5px; color:var(--sub);
+  position:relative; padding-top:16px; line-height:1.3}
+.flow li::before{content:""; position:absolute; top:4px; left:0; right:0;
+  height:5px; background:var(--line)}
+.flow li:first-child::before{border-radius:3px 0 0 3px}
+.flow li:last-child::before{border-radius:0 3px 3px 0}
+.flow li.done::before{background:#a7f3d0}
+.flow li.now::before{background:var(--accent)}
+.flow li.now{color:var(--accent); font-weight:700}
+
+.kv{display:flex; margin:14px 0 0; padding:12px 0 0; gap:8px;
+  border-top:1px solid var(--line)}
+.kv>div{flex:1; text-align:center}
+.kv dt{font-size:11px; color:var(--sub); margin:0}
+.kv dd{margin:2px 0 0; font-size:14px; font-weight:700}
+
+.amount{display:flex;align-items:baseline;justify-content:space-between;
+  margin-top:12px;padding-top:12px;border-top:1px solid var(--line);
+  font-size:12px;color:var(--sub)}
+.amount b{font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums}
+.total{text-align:center;padding:14px 0 4px}
+.total b{display:block;font-size:30px;font-variant-numeric:tabular-nums}
+.total span{font-size:12px;color:var(--sub)}
+
+/* ---- 警告カード ---- */
+.alert{border:1px solid #fecaca; background:#fff7f7}
+.alert .t2{color:var(--danger); margin-top:0}
+
+/* ---- メニュー ---- */
+.menu button{width:100%; text-align:left; background:var(--card); border:0;
+  border-radius:var(--r); padding:15px var(--pad); margin-bottom:10px;
+  display:flex; justify-content:space-between; align-items:center;
+  box-shadow:0 1px 2px rgba(16,24,40,.06); font-size:14px}
+.menu i{color:var(--sub); font-style:normal; font-size:18px}
+
+/* ---- 明細 ---- */
+.items{list-style:none; margin:0; padding:0}
+.items li{display:flex; justify-content:space-between; align-items:baseline;
+  gap:10px; padding:11px 0; border-bottom:1px solid var(--line)}
+.items li:last-child{border-bottom:0}
+.items .nm{flex:1; min-width:0}
+.items .nm b{display:block; font-weight:600; font-size:14px}
+.items .nm em{font-style:normal; font-size:11px; color:var(--sub)}
+.items .amt{font-weight:700; white-space:nowrap; font-variant-numeric:tabular-nums}
+.items.edit input{width:100%; padding:9px 10px; border:1px solid var(--line);
+  border-radius:9px}
+.comment p{background:#f8fafc;border-radius:10px;padding:12px;font-size:13px;
+  margin:0;white-space:pre-wrap}
+.bank{font-size:14px;margin:0}
+
+.done{color:var(--ok);font-weight:700;text-align:center;margin:16px 0 0}
+
+/* ---- フォーム ---- */
+.form{text-align:left}
+.form label{display:block; margin-top:12px; font-size:12px; color:var(--sub)}
+.form input,.form select{
+  width:100%; margin-top:5px; padding:12px; border:1px solid var(--line);
+  border-radius:10px; background:#fff; font-size:16px; /* iOS の自動ズーム回避 */
+}
+.row{display:flex; gap:10px}
+.row>label{flex:1}
+.shots{display:flex; gap:10px; margin-top:10px}
+.shot{flex:1; margin:0}
+.shot input{display:none}
+.shot-box{display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:4px; height:96px; border:2px dashed var(--line);
+  border-radius:12px; background:#fafafa; color:var(--sub); font-size:12px}
+.shot-box b{font-size:13px; color:var(--ink)}
+.shot-box.set{border-style:solid; border-color:var(--ok); background:#f0fdf4}
+.shot-box.set em{color:var(--ok); font-weight:700}
+
+/* ---- 履歴 ---- */
+.segs{display:flex; gap:6px; margin:10px 0 4px}
+.segs button{flex:1; padding:8px 0; border:1px solid var(--line);
+  background:#fff; border-radius:9px; font-size:13px; color:var(--sub)}
+.segs button.on{background:var(--brand); border-color:var(--brand); color:#fff;
+  font-weight:700}
+.hist{list-style:none; margin:10px 0 0; padding:0}
+.hist li{padding:13px 0; border-bottom:1px solid var(--line)}
+.hist li:last-child{border-bottom:0}
+.hist .r1{display:flex; justify-content:space-between; align-items:center;
+  gap:8px}
+.hist .r2{display:flex; justify-content:space-between; align-items:baseline;
+  gap:8px; margin-top:3px}
+.hist .ttl{font-size:14px; font-weight:600}
+.hist .dt{font-size:11px; color:var(--sub)}
+.hist .amt{font-weight:700; font-variant-numeric:tabular-nums}
+.hist button{background:none;border:0;padding:0;width:100%;text-align:left}
+
+/* ---- フォーム1 ---- */
+.steps{font-size:11px;color:var(--sub);letter-spacing:.04em;margin-bottom:4px}
+.steps b{color:var(--accent)}
+.req{font-style:normal;font-size:10px;background:#fde8e8;color:var(--danger);
+  border-radius:3px;padding:1px 5px;margin-left:5px;vertical-align:1px}
+.btn-sub{width:100%;min-height:46px;margin-top:5px;border:1px solid var(--line);
+  background:#fff;border-radius:10px;font-size:13px;color:var(--ink);cursor:pointer}
+.kits{display:flex;gap:8px;margin-top:6px}
+.kits label{flex:1;margin:0}
+.kits input{position:absolute;opacity:0;pointer-events:none}
+.kits .kb{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;padding:12px 4px;border:2px solid var(--line);border-radius:12px;
+  background:#fff;cursor:pointer}
+.kits .kb b{font-size:15px}
+.kits .kb em{font-style:normal;font-size:11px;color:var(--sub)}
+.kits input:checked + .kb{border-color:var(--accent);background:#f0fdfa}
+.kits input:checked + .kb em{color:var(--accent)}
+.consent{list-style:none;margin:6px 0 0;padding:12px;background:#f8fafc;
+  border-radius:10px;font-size:12px;color:var(--sub)}
+.consent li{padding:3px 0 3px 16px;position:relative}
+.consent li::before{content:"・";position:absolute;left:2px}
+.consent a{color:var(--accent)}
+.chk{display:flex!important;align-items:center;gap:9px;margin-top:12px;
+  font-size:14px;color:var(--ink)}
+.chk input{width:20px;height:20px;margin:0;flex:none}
+
+/* ---- 完了 ---- */
+.tick{width:56px;height:56px;margin:4px auto 10px;border-radius:50%;
+  background:#d1fae5;color:var(--ok);font-size:30px;line-height:56px;font-weight:700}
+.rcptbox{background:#f8fafc;border-radius:12px;padding:12px;margin:14px 0 6px}
+.rcptbox span{display:block;font-size:11px;color:var(--sub)}
+.rcptbox b{font-size:21px;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.flowlist{list-style:none;margin:6px 0 0;padding:0;text-align:left}
+.flowlist li{display:flex;gap:10px;align-items:flex-start;padding:9px 0;
+  border-bottom:1px solid var(--line);font-size:13px}
+.flowlist li:last-child{border-bottom:0}
+.flowlist b{flex:none;width:22px;height:22px;border-radius:50%;background:var(--accent);
+  color:var(--accent-ink);font-size:12px;line-height:22px;text-align:center}
+
+@media (prefers-color-scheme: dark){
+  :root{--bg:#0f1115; --card:#171a21; --ink:#e7e9ee; --sub:#9aa3b2;
+        --line:#2a2f3a; --brand:#0b0d11; --accent:#2dd4bf; --accent-ink:#04211e}
+  .alert{background:#1f1517; border-color:#7f1d1d}
+  .comment p{background:#1b1f27}
+  .shot-box{background:#141821}
+  .sep span{background:var(--card)}
+  .segs button{background:#141821}
+  .req{background:#3b1b1b}
+  .btn-sub{background:#141821}
+  .kits .kb{background:#141821}
+  .kits input:checked + .kb{background:#12211f}
+  .consent,.rcptbox{background:#1b1f27}
+  .tick{background:#0f2a22}
+}

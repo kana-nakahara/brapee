@@ -1,0 +1,271 @@
+<!-- ============ 初回の紐づけ（M-10）。LINEログインは LIFF が済ませている ============ -->
+<template id="tpl-login">
+  <section class="card center">
+    <h1 class="t1">マイページ</h1>
+    <p class="lead">ブランド品宅配買取ブラッピーのお客様ページです。</p>
+
+    <form id="formVerify" class="form">
+      <h2 class="t2">はじめに、ご本人の確認をお願いします</h2>
+      <p class="note">
+        お申し込みのときにお知らせした受付番号と、ご登録のお電話番号をご入力ください。
+        次回からはこの LINE アカウントでそのまま開けます。
+      </p>
+      <label>受付番号
+        <input name="受付番号" inputmode="text" autocomplete="off"
+               placeholder="BRP-20260903-014" required>
+      </label>
+      <label>電話番号
+        <input name="電話番号" inputmode="tel" autocomplete="tel"
+               placeholder="090-1234-5678" required>
+      </label>
+      <button class="btn btn-primary" type="submit">マイページを開く</button>
+      <p class="err" id="verifyErr" hidden></p>
+    </form>
+
+    <p class="fine">
+      ログインにご利用のLINEアカウントは、お客様ご本人の確認に用います。
+      第三者に使用させないでください。
+    </p>
+  </section>
+</template>
+
+<!-- ============ マイページTOP（M-02） ============ -->
+<template id="tpl-top">
+  <section class="greet">
+    <div class="greet-name"><b data-f="顧客名"></b> さま</div>
+    <div class="greet-sub" data-f="ログイン手段"></div>
+  </section>
+
+  <section class="card case" data-if="案件">
+    <div class="case-hd">
+      <span class="rcpt" data-f="受付番号"></span>
+      <span class="pill" data-f="案件ステータス"></span>
+    </div>
+    <ol class="flow" data-flow></ol>
+    <dl class="kv">
+      <div><dt>点数</dt><dd data-f="点数つき"></dd></div>
+      <div><dt>集荷日</dt><dd data-f="集荷日表示"></dd></div>
+      <div><dt>キット</dt><dd data-f="宅配キット種別"></dd></div>
+    </dl>
+    <div class="amount" data-if="買取金額あり">
+      <span>買取金額</span><b data-f="買取金額表示"></b>
+    </div>
+    <button class="btn btn-primary" data-go-case data-if="承認できる">
+      査定結果を確認して承認する
+    </button>
+  </section>
+
+  <section class="card alert" data-if="未完了あり">
+    <h2 class="t2">ご登録がまだ済んでいません</h2>
+    <p data-f="未完了文"></p>
+    <button class="btn btn-primary" data-view="form2">本人確認・口座を登録する</button>
+  </section>
+
+  <section class="menu">
+    <button data-view="history">取引履歴・査定履歴・入金履歴 <i>›</i></button>
+  </section>
+
+  <!-- 🔴「お客様情報の確認・変更」は対応する機能が無いため11月は出さない。
+          変更は LINE でスタッフへご連絡いただく運用（設計 §8）。 -->
+  <p class="fine">
+    ご住所・お電話番号の変更は、LINEのトークからスタッフへご連絡ください。
+  </p>
+</template>
+
+<!-- ============ 査定結果の確認・承認（M-07 / M-08） ============ -->
+<template id="tpl-case">
+  <button class="back" data-view="top">‹ もどる</button>
+  <section class="card">
+    <div class="case-hd">
+      <span class="rcpt" data-f="受付番号"></span>
+      <span class="pill" data-f="案件ステータス"></span>
+    </div>
+    <div class="total" data-if="買取金額あり">
+      <b data-f="買取金額表示"></b>
+      <span data-f="査定完了日"></span>
+    </div>
+    <h2 class="t2">明細</h2>
+    <ul class="items" data-items></ul>
+    <div class="comment" data-if="客向けコメント">
+      <h2 class="t2">スタッフからのコメント</h2>
+      <p data-f="客向けコメント"></p>
+    </div>
+    <h2 class="t2">お振込先</h2>
+    <p class="bank" data-f="口座表示"></p>
+    <div data-if="承認できる">
+      <button class="btn btn-primary" id="btnApprove">この金額で承認する</button>
+      <p class="note">承認いただくとお振込みの手続きに進みます。</p>
+    </div>
+    <p class="done" data-if="承認済み">✓ 承認済みです。お振込みをお待ちください。</p>
+  </section>
+</template>
+
+<!-- ============ フォーム2（M-04 / M-05 / M-06） ============ -->
+<template id="tpl-form2">
+  <section class="card">
+    <h1 class="t1">本人確認・お振込先の登録</h1>
+    <p class="lead">
+      ご登録がないと査定額をお振込みできません。お手数ですがご登録をお願いします。
+    </p>
+    <form id="formForm2" class="form">
+
+      <h2 class="t2">1. 本人確認書類</h2>
+      <label>書類の種類
+        <select name="書類種別" data-master="書類種別"></select>
+      </label>
+      <div class="shots">
+        <label class="shot">
+          <input type="file" name="表面" accept="image/*" capture="environment">
+          <span class="shot-box"><b>表面</b><em data-f="表面状態">撮影する</em></span>
+        </label>
+        <label class="shot">
+          <input type="file" name="裏面" accept="image/*" capture="environment">
+          <span class="shot-box"><b>裏面</b><em data-f="裏面状態">撮影する</em></span>
+        </label>
+      </div>
+      <p class="note">
+        文字がはっきり読めるように、明るい場所で撮影してください。
+        マイナンバーカードは表面のみお送りください。
+      </p>
+      <div class="row">
+        <label>ご職業
+          <select name="職業" data-master="職業"></select>
+        </label>
+        <label>年齢
+          <input name="年齢" inputmode="numeric" placeholder="42">
+        </label>
+      </div>
+
+      <h2 class="t2">2. お振込先</h2>
+      <p class="note">🔴 お客様ご本人名義の口座をご登録ください。</p>
+      <label>銀行名 <input name="金融機関名" placeholder="◯◯銀行"></label>
+      <label>支店名 <input name="支店名" placeholder="◯◯支店"></label>
+      <div class="row">
+        <label>種別
+          <select name="口座種別" data-master="口座種別"></select>
+        </label>
+        <label>口座番号
+          <input name="口座番号" inputmode="numeric" placeholder="1234567">
+        </label>
+      </div>
+      <label>口座名義（カナ）
+        <input name="口座名義カナ" placeholder="ヤマダ タロウ">
+      </label>
+
+      <h2 class="t2">3. お品物の確認</h2>
+      <ul class="items edit" data-items2></ul>
+      <p class="note" data-f="商品注記"></p>
+
+      <button class="btn btn-primary" type="submit">登録する</button>
+      <p class="err" id="form2Err" hidden></p>
+      <p class="ok"  id="form2Ok"  hidden>ご登録ありがとうございました。</p>
+    </form>
+  </section>
+</template>
+
+<!-- ============ 履歴（M-03 / M-09） ============ -->
+<template id="tpl-history">
+  <section class="card">
+    <h1 class="t1">履歴</h1>
+    <div class="segs">
+      <button class="on" data-seg="取引">取引</button>
+      <button data-seg="査定">査定</button>
+      <button data-seg="入金">入金</button>
+    </div>
+    <ul class="hist" data-hist></ul>
+    <p class="empty" data-if="空">まだお取引がありません。</p>
+  </section>
+</template>
+
+<!-- ============ フォーム1｜仮申し込み（F-01〜F-05 / M1） ============ -->
+<template id="tpl-apply">
+  <section class="card">
+    <div class="steps"><b>STEP 1</b> / 2　仮申し込み</div>
+    <h1 class="t1">宅配買取のお申し込み</h1>
+    <p class="lead" data-f="入口説明"></p>
+
+    <form id="formApply" class="form" novalidate>
+      <label>お名前 <i class="req">必須</i>
+        <input name="顧客名" autocomplete="name" placeholder="例）山田 太郎" required>
+      </label>
+      <label>お名前（カナ）
+        <input name="顧客名カナ" placeholder="例）ヤマダ タロウ">
+      </label>
+      <label>電話番号 <i class="req">必須</i>
+        <input name="電話番号" inputmode="tel" autocomplete="tel"
+               placeholder="例）09012345678" required>
+      </label>
+
+      <h2 class="t2">ご住所（集荷先） <i class="req">必須</i></h2>
+      <div class="row">
+        <label style="flex:1.1">〒
+          <input name="郵便番号" inputmode="numeric" autocomplete="postal-code"
+                 placeholder="1000001" maxlength="8">
+        </label>
+        <label style="flex:1;align-self:end">
+          <button type="button" class="btn-sub" id="btnZip">住所を自動入力</button>
+        </label>
+      </div>
+      <div class="row">
+        <label style="flex:0.8">都道府県
+          <input name="都道府県" autocomplete="address-level1" required>
+        </label>
+        <label style="flex:1.6">市区町村
+          <input name="住所1" autocomplete="address-level2" required>
+        </label>
+      </div>
+      <label>番地・建物名
+        <input name="住所2" autocomplete="address-line2">
+      </label>
+      <p class="note" id="zipMsg" hidden></p>
+
+      <h2 class="t2">宅配キット <i class="req">必須</i></h2>
+      <div class="kits" data-kits></div>
+
+      <h2 class="t2">集荷希望日時 <i class="req">必須</i></h2>
+      <div class="row">
+        <label style="flex:1.2">希望日
+          <input type="date" name="集荷希望日" required>
+        </label>
+        <label style="flex:1">時間帯
+          <select name="集荷希望時間帯" required></select>
+        </label>
+      </div>
+
+      <h2 class="t2">ご確認 <i class="req">必須</i></h2>
+      <ul class="consent" data-consent></ul>
+      <label class="chk">
+        <input type="checkbox" name="同意" value="1" required>
+        <span>上記すべてに同意します</span>
+      </label>
+
+      <p class="note">
+        本人確認書類とお振込先は、宅配キットの到着後にマイページでご登録いただきます。
+      </p>
+      <button class="btn btn-primary" type="submit">この内容で申し込む</button>
+      <p class="err" id="applyErr" hidden></p>
+    </form>
+  </section>
+</template>
+
+<!-- ============ 申し込み完了（F-04 / M2） ============ -->
+<template id="tpl-done">
+  <section class="card center">
+    <div class="tick">✓</div>
+    <h1 class="t1">お申し込みを受け付けました</h1>
+    <div class="rcptbox">
+      <span>受付番号</span>
+      <b data-f="受付番号"></b>
+    </div>
+    <p class="note" data-f="line注記"></p>
+
+    <h2 class="t2" style="text-align:left">このあとの流れ</h2>
+    <ol class="flowlist">
+      <li><b>1</b><span>宅配キットが1〜2日で届きます</span></li>
+      <li><b>2</b><span>マイページで本人確認書類とお振込先をご登録</span></li>
+      <li><b>3</b><span>お品物を詰めて集荷をお待ちください</span></li>
+    </ol>
+    <button class="btn btn-primary" id="btnToMypage">マイページを開く</button>
+    <button class="btn btn-line" id="btnToTalk" hidden>LINEのトークに戻る</button>
+  </section>
+</template>
