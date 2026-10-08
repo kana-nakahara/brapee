@@ -5,5 +5,5 @@ window.BRAPEE = {
   GAS_URL: '',
   /* LIFF ID（LINE Developers → LINEログインチャネル「ブラッピー」→ LIFF） */
   LIFF_APPLY: '2011924585-IckE4Lw7',
-  LIFF_MYPAGE: '',
+  LIFF_MYPAGE: '2011924585-ZCzdrUdv',
 };
