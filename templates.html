@@ -22,6 +22,8 @@
       <p class="err" id="verifyErr" hidden></p>
     </form>
 
+    <a class="btn btn-sub" data-apply-link href="apply.html">はじめてのお申し込みはこちら</a>
+
     <p class="fine">
       ログインにご利用のLINEアカウントは、お客様ご本人の確認に用います。
       第三者に使用させないでください。
@@ -53,6 +55,16 @@
     <button class="btn btn-primary" data-go-case data-if="承認できる">
       査定結果を確認して承認する
     </button>
+    <button class="btn btn-sub" data-view="pickup" data-if="変更できる">集荷日時・キットを変更する</button>
+    <a class="btn btn-primary" data-apply-link href="apply.html" data-if="完了">新しく申し込む</a>
+  </section>
+
+  <section class="card" data-if="案件">
+    <h2 class="t2">ご登録の状況</h2>
+    <ul class="checks">
+      <li><span>本人確認書類</span><b data-f="本人確認表示"></b></li>
+      <li><span>お振込先</span><b data-f="口座表示"></b></li>
+    </ul>
   </section>
 
   <section class="card alert" data-if="未完了あり">
@@ -61,12 +73,18 @@
     <button class="btn btn-primary" data-view="form2">本人確認・口座を登録する</button>
   </section>
 
+  <section class="card center" data-if="案件なし">
+    <p class="lead">お申し込み中のお取引はありません。</p>
+    <a class="btn btn-primary" data-apply-link href="apply.html">宅配買取を申し込む</a>
+  </section>
+
   <section class="menu">
     <button data-view="history">取引履歴・査定履歴・入金履歴 <i>›</i></button>
   </section>
 
   <!-- 🔴「お客様情報の確認・変更」は対応する機能が無いため11月は出さない。
           変更は LINE でスタッフへご連絡いただく運用（設計 §8）。 -->
+  <a class="btn btn-line" data-line-chat href="#">LINEでスタッフに相談する</a>
   <p class="fine">
     ご住所・お電話番号の変更は、LINEのトークからスタッフへご連絡ください。
   </p>
@@ -97,6 +115,7 @@
       <p class="note">承認いただくとお振込みの手続きに進みます。</p>
     </div>
     <p class="done" data-if="承認済み">✓ 承認済みです。お振込みをお待ちください。</p>
+    <a class="btn btn-line" data-line-chat href="#" data-if="承認できる">金額について LINE で相談する</a>
   </section>
 </template>
 
@@ -107,6 +126,8 @@
     <p class="lead">
       ご登録がないと査定額をお振込みできません。お手数ですがご登録をお願いします。
     </p>
+    <p class="err" data-if="要再提出">本人確認書類の画像が確認できませんでした。お手数ですが、表面・裏面を撮り直してご登録ください。</p>
+    <p class="ok" data-if="確認済">✓ 本人確認は完了しています。</p>
     <form id="formForm2" class="form">
 
       <h2 class="t2">1. 本人確認書類</h2>
@@ -159,6 +180,34 @@
       <button class="btn btn-primary" type="submit">登録する</button>
       <p class="err" id="form2Err" hidden></p>
       <p class="ok"  id="form2Ok"  hidden>ご登録ありがとうございました。</p>
+    </form>
+  </section>
+</template>
+
+<!-- ============ お申し込み内容の変更（M-06） ============ -->
+<template id="tpl-pickup">
+  <button class="back" data-view="top">‹ もどる</button>
+  <section class="card">
+    <h1 class="t1">集荷日時・キットの変更</h1>
+    <p class="lead">受付番号 <b data-f="受付番号"></b></p>
+    <form id="formPickup" class="form" novalidate>
+      <div data-if="キット変更可">
+        <h2 class="t2">宅配キット</h2>
+        <div class="kits" data-kits></div>
+      </div>
+      <p class="note" data-if="キット変更不可">宅配キットは発送済みのため変更できません。</p>
+      <h2 class="t2">集荷希望日時</h2>
+      <div class="row">
+        <label style="flex:1.2">希望日
+          <input type="date" name="集荷希望日" required>
+        </label>
+        <label style="flex:1">時間帯
+          <select name="集荷希望時間帯" required></select>
+        </label>
+      </div>
+      <p class="note">変更はスタッフにも自動でお知らせします。</p>
+      <button class="btn btn-primary" type="submit">変更する</button>
+      <p class="err" id="pickupErr" hidden></p>
     </form>
   </section>
 </template>

@@ -43,16 +43,21 @@ function fmtMD(s) {
 async function api(action, payload) {
   if (!CFG.GAS_URL) throw new Error('準備中です（API の URL が未設定です）');
   const body = Object.assign({ action, idToken }, payload || {});
-  let r;
-  try {
-    r = await fetch(CFG.GAS_URL, {
-      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body)
-    });
-  } catch (e) {
-    throw new Error('通信できませんでした。電波の良いところでお試しください');
-  }
   let j = null;
-  try { j = await r.json(); } catch (e) { /* 下で扱う */ }
+  if (CFG.DEV_API) {
+    /* 画面確認用プレビューだけで使う（本番の config.js には無い） */
+    j = await CFG.DEV_API(body);
+  } else {
+    let r;
+    try {
+      r = await fetch(CFG.GAS_URL, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body)
+      });
+    } catch (e) {
+      throw new Error('通信できませんでした。電波の良いところでお試しください');
+    }
+    try { j = await r.json(); } catch (e) { /* 下で扱う */ }
+  }
   if (!j) throw new Error('エラーが発生しました');
   if (!j.ok) {
     /* IDトークンの期限切れ。ログインし直して同じ画面へ戻る */
@@ -113,6 +118,10 @@ async function loadTemplates() {
 /* ---------------------------------------------------------------- LIFF
    🔴 LINEユーザーIDは画面で使わない。IDトークンを GAS へ送り、GAS が検証して引く。 */
 async function initLiff(liffId, required) {
+  if (CFG.DEV_ID_TOKEN !== undefined) {
+    idToken = CFG.DEV_ID_TOKEN || null;
+    return !!idToken;
+  }
   if (!liffId || !window.liff) {
     if (required) throw new Error('準備中です（LIFF が未設定です）');
     return false;
@@ -146,17 +155,58 @@ async function boot() {
 
 function go(view, arg) {
   state.view = view;
-  setTab(view);
-  if (view === 'top') return viewTop();
-  if (view === 'case') return viewCase(arg);
-  if (view === 'form2') return viewForm2();
-  if (view === 'history') return viewHistory();
+  setTab(view === 'pickup' ? 'top' : view);
+  const p = view === 'top' ? viewTop() : view === 'case' ? viewCase(arg) : view === 'form2' ? viewForm2()
+    : view === 'history' ? viewHistory() : view === 'pickup' ? viewPickup() : null;
+  if (p && p.catch) p.catch(showError);
+  return p;
 }
+
+function showError(e) {
+  app.innerHTML = `<div class="card center"><p class="err">${esc(e.message)}</p>
+    <button class="btn btn-primary" onclick="location.reload()">やり直す</button></div>`;
+}
+
+/* 公式アカウントのトークを開く（相談・問い合わせ）。LINE の中ならそのままトークへ移る */
+function wireLineChat(node) {
+  node.querySelectorAll('[data-line-chat]').forEach(a => {
+    if (!CFG.OA_ID) { a.remove(); return; }
+    a.href = 'https://line.me/R/oaMessage/' + encodeURIComponent(CFG.OA_ID) + '/';
+  });
+}
+
+/* 申込フォームへのリンク。LINE の中でも外でも LIFF の URL で開く（LINE ユーザーIDを紐づけるため） */
+function wireApplyLinks(node) {
+  if (!CFG.LIFF_APPLY || CFG.DEV_API) return;
+  node.querySelectorAll('[data-apply-link]').forEach(a => { a.href = 'https://liff.line.me/' + CFG.LIFF_APPLY; });
+}
+
+/* 入力の揺れを寄せる：全角英数→半角、ひらがな→カタカナ（カナ欄） */
+const nfkc = s => String(s || '').normalize('NFKC').trim();
+/* 時間帯の見せ方：「14-16」→「14〜16時」（値はそのまま送る） */
+const slotLabel = v => /^\d{1,2}-\d{1,2}$/.test(v || '') ? v.replace('-', '〜') + '時' : (v || '');
+const toKata = s => String(s || '').replace(/[ぁ-ゖ]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60));
+
+/** 入力欄の下にエラーを出す（F-02「入力漏れをその場で知らせる」）。ok なら消す */
+function fieldError(el, msg) {
+  const holder = el.closest('label') || el.parentElement;
+  let p = holder.querySelector(':scope > .field-err');
+  el.classList.toggle('invalid', !!msg);
+  if (!msg) { if (p) p.remove(); return true; }
+  if (!p) { p = document.createElement('p'); p.className = 'field-err'; holder.appendChild(p); }
+  p.textContent = msg;
+  return false;
+}
+
+const KYC_LABEL = { '未登録': ['未登録', 'st-ng'], '未確認': ['未登録', 'st-ng'], '確認中': ['確認中', 'st-wait'],
+  '確認済': ['確認済み', 'st-ok'], '要再提出': ['撮り直しのお願い', 'st-ng'] };
+const PICKUP_EDITABLE = ['申込', 'キット発送', 'キット到達'];
 
 /* ---------------------------------------------------------------- M-10 初回の紐づけ */
 function viewLogin() {
   showChrome(false);
   const node = render('tpl-login', {});
+  wireApplyLinks(node);
   const form = node.querySelector('#formVerify');
   const err = node.querySelector('#verifyErr');
   form.addEventListener('submit', async ev => {
@@ -188,18 +238,23 @@ async function viewTop() {
     'ログイン手段': 'LINEアカウントでログイン中',
     '未完了あり': todo.length > 0,
     '未完了文': todo.join('と') + 'のご登録をお願いします。ご登録がないと査定額をお振込みできません。',
-    '案件': !!a
+    '案件': !!a,
+    '案件なし': !a,
+    '完了': !!a && a['案件ステータス'] === '入金済み'
   };
   if (a) Object.assign(d, {
     '受付番号': a['受付番号'],
     '案件ステータス': a['案件ステータス'],
     '点数つき': (a['点数'] || 0) + '点',
     '集荷日表示': fmtMD(a['集荷希望日']) +
-      (a['集荷希望時間帯'] ? ' ' + a['集荷希望時間帯'] : ''),
+      (a['集荷希望時間帯'] ? ' ' + slotLabel(a['集荷希望時間帯']) : ''),
     '宅配キット種別': a['宅配キット種別'] || '—',
     '買取金額あり': a['買取金額'] !== null && a['買取金額'] !== undefined,
     '買取金額表示': yen(a['買取金額']),
-    '承認できる': a['案件ステータス'] === '承認待ち'
+    '承認できる': a['案件ステータス'] === '承認待ち',
+    '変更できる': PICKUP_EDITABLE.indexOf(a['案件ステータス']) >= 0,
+    '本人確認表示': (KYC_LABEL[me['本人確認状況']] || [me['本人確認状況']])[0],
+    '口座表示': me['口座登録済'] ? '登録済み' : '未登録'
   });
 
   const node = render('tpl-top', d);
@@ -209,7 +264,48 @@ async function viewTop() {
     if (pill && a['ステータス配色']) pill.style.background = a['ステータス配色'];
     const b = node.querySelector('[data-go-case]');
     if (b) b.addEventListener('click', () => go('case', a['案件id']));
+    const marks = node.querySelectorAll('.checks b');
+    if (marks[0]) marks[0].className = (KYC_LABEL[me['本人確認状況']] || ['', 'st-wait'])[1];
+    if (marks[1]) marks[1].className = me['口座登録済'] ? 'st-ok' : 'st-ng';
   }
+  wireApplyLinks(node);
+  wireLineChat(node);
+  mount(node);
+}
+
+/* ---------------------------------------------------------------- M-06 集荷日時・キットの変更 */
+async function viewPickup() {
+  const r = await api('form2.get');
+  const a = r['案件'];
+  if (!a || PICKUP_EDITABLE.indexOf(a['案件ステータス']) < 0) return go('top');
+  const kitOk = a['案件ステータス'] === '申込';
+  const node = render('tpl-pickup', { '受付番号': a['受付番号'], 'キット変更可': kitOk, 'キット変更不可': !kitOk });
+  const form = node.querySelector('#formPickup');
+  if (kitOk) {
+    node.querySelector('[data-kits]').innerHTML = (r['マスタ']['キット'] || []).map(k => `
+      <label><input type="radio" name="宅配キット種別" value="${esc(k)}" ${k === a['宅配キット種別'] ? 'checked' : ''}>
+        <span class="kb"><b>${esc(k)}</b></span></label>`).join('');
+  }
+  form.elements['集荷希望時間帯'].innerHTML = (r['マスタ']['時間帯'] || [])
+    .map(v => `<option value="${esc(v)}" ${v === a['集荷希望時間帯'] ? 'selected' : ''}>${esc(slotLabel(v))}</option>`).join('');
+  const dt = form.elements['集荷希望日'];
+  dt.min = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  dt.value = a['集荷希望日'] || dt.min;
+  const err = node.querySelector('#pickupErr');
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    err.hidden = true;
+    const btn = form.querySelector('button[type=submit]');
+    btn.disabled = true;
+    try {
+      const fd = new FormData(form);
+      await api('pickup.update', { 案件id: a['案件id'], 集荷希望日: fd.get('集荷希望日'),
+        集荷希望時間帯: fd.get('集荷希望時間帯'), 宅配キット種別: fd.get('宅配キット種別') || '' });
+      go('top');
+    } catch (e) {
+      err.textContent = e.message; err.hidden = false; btn.disabled = false;
+    }
+  });
   mount(node);
 }
 
@@ -264,6 +360,7 @@ async function viewCase(案件id) {
       btn.disabled = false;
     }
   });
+  wireLineChat(node);
   mount(node);
 }
 
@@ -296,9 +393,13 @@ async function viewForm2() {
   const r = await api('form2.get');
   const k = r['本人確認'] || {}, g = r['口座'] || {}, a = r['案件'];
   const 修正可 = a && ['申込', 'キット発送', 'キット到達'].indexOf(a['案件ステータス']) >= 0;
+  /* 要再提出のときは「登録済み」と見せない（撮り直しが要る） */
+  const redo = k['確認状況'] === '要再提出';
   const node = render('tpl-form2', {
-    '表面状態': k['表面登録済'] ? '登録済み' : '撮影する',
-    '裏面状態': k['裏面登録済'] ? '登録済み' : '撮影する',
+    '要再提出': k['確認状況'] === '要再提出',
+    '確認済': k['確認状況'] === '確認済',
+    '表面状態': redo ? '撮り直す' : (k['表面登録済'] ? '登録済み' : '撮影する'),
+    '裏面状態': redo ? '撮り直す' : (k['裏面登録済'] ? '登録済み' : '撮影する'),
     '商品注記': 修正可 ? '品名は集荷までご修正いただけます。'
       : '集荷後のお品物は画面から変更できません。LINEでご連絡ください。'
   });
@@ -319,8 +420,8 @@ async function viewForm2() {
     const el = form.elements[n];
     if (el && cur[n] !== null && cur[n] !== undefined) el.value = cur[n];
   });
-  if (k['表面登録済']) form.querySelector('[name=表面]').closest('label').querySelector('.shot-box').classList.add('set');
-  if (k['裏面登録済']) form.querySelector('[name=裏面]').closest('label').querySelector('.shot-box').classList.add('set');
+  if (k['表面登録済'] && !redo) form.querySelector('[name=表面]').closest('label').querySelector('.shot-box').classList.add('set');
+  if (k['裏面登録済'] && !redo) form.querySelector('[name=裏面]').closest('label').querySelector('.shot-box').classList.add('set');
 
   /* 撮ったら見た目を変える */
   form.querySelectorAll('input[type=file]').forEach(inp => {
@@ -418,8 +519,11 @@ function paintHistory() {
 /* ---------------------------------------------------------------- F-01〜F-05 */
 async function viewApply() {
   /* LIFF は「取れれば紐づける」。LINE の外や失敗でもフォームは使える
-     （未連携で申し込み、あとからマイページの受付番号照合で紐づく） */
-  const [init, line] = await Promise.all([api('apply.init'), initLiff(CFG.LIFF_APPLY, false)]);
+     （未連携で申し込み、あとからマイページの受付番号照合で紐づく）。
+     🔴 IDトークンを先に取り、apply.init に渡す（2回目のお客様に前回の入力を返すため） */
+  const line = await initLiff(CFG.LIFF_APPLY, false);
+  const init = await api('apply.init');
+  const prev = init['前回'];
 
   const node = render('tpl-apply', {
     '入口説明': line
@@ -438,7 +542,7 @@ async function viewApply() {
   /* 時間帯 */
   node.querySelector('[name=集荷希望時間帯]').innerHTML =
     '<option value="">選択してください</option>' +
-    (init['時間帯'] || []).map(v => `<option>${esc(v)}</option>`).join('');
+    (init['時間帯'] || []).map(v => `<option value="${esc(v)}">${esc(slotLabel(v))}</option>`).join('');
 
   /* 同意事項（F-05） */
   node.querySelector('[data-consent]').innerHTML = (init['同意事項'] || []).map((t, i) =>
@@ -449,25 +553,64 @@ async function viewApply() {
 
   const form = node.querySelector('#formApply');
   const err = node.querySelector('#applyErr');
+  const F = n => form.elements[n];
+
+  /* 2回目以降：前回のお名前・ご住所を入れておく（変わっていれば直してもらう） */
+  if (prev) {
+    ['顧客名', '顧客名カナ', '電話番号', '郵便番号', '都道府県', '住所1', '住所2'].forEach(n => {
+      if (prev[n] && F(n)) F(n).value = prev[n];
+    });
+    const note = document.createElement('p');
+    note.className = 'prefill';
+    note.textContent = '前回のお名前・ご住所を入れてあります。変わっていればお直しください。';
+    form.insertBefore(note, form.firstChild);
+  }
 
   /* 集荷希望日は翌々日を既定に、過去日は選べないようにする（日本時間で数える） */
-  const dt = form.elements['集荷希望日'];
+  const dt = F('集荷希望日');
   const jst = ms => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
   dt.min = jst(Date.now());
   dt.value = jst(Date.now() + 2 * 864e5);
 
+  /* F-02 入力チェック。抜けた欄・形の違う欄をその場で知らせる */
+  const RULES = {
+    '顧客名': v => v ? '' : 'お名前をご入力ください',
+    '顧客名カナ': v => !v || /^[ァ-ヶー\s]+$/.test(v) ? '' : 'カタカナでご入力ください',
+    '電話番号': v => /^0\d{9,10}$/.test(v.replace(/\D/g, '')) ? '' : '市外局番からご入力ください（例 09012345678）',
+    '郵便番号': v => !v || /^\d{3}-?\d{4}$/.test(v) ? '' : '7桁でご入力ください',
+    '都道府県': v => v ? '' : '都道府県をご入力ください',
+    '住所1': v => v ? '' : '市区町村・番地をご入力ください',
+    '集荷希望日': v => v && v >= dt.min ? '' : '本日以降の日付をお選びください',
+    '集荷希望時間帯': v => v ? '' : '時間帯をお選びください',
+  };
+  const clean = n => {
+    const el = F(n);
+    let v = nfkc(el.value);
+    if (n === '顧客名カナ') v = toKata(v);
+    if (el.value !== v && el.type !== 'date') el.value = v;
+    return v;
+  };
+  const check = n => fieldError(F(n), RULES[n](clean(n)));
+  Object.keys(RULES).forEach(n => {
+    F(n).addEventListener('blur', () => { if (F(n).value || F(n).classList.contains('invalid')) check(n); });
+    F(n).addEventListener('change', () => check(n));
+  });
+
   /* F-02 郵便番号からの住所補完 */
   const zipMsg = node.querySelector('#zipMsg');
   node.querySelector('#btnZip').addEventListener('click', async () => {
-    const z = (form.elements['郵便番号'].value || '').replace(/\D/g, '');
+    const z = nfkc(F('郵便番号').value).replace(/\D/g, '');
     zipMsg.hidden = true;
-    if (z.length !== 7) { zipMsg.textContent = '郵便番号は7桁でご入力ください'; zipMsg.hidden = false; return; }
+    if (z.length !== 7) { fieldError(F('郵便番号'), '7桁でご入力ください'); return; }
+    fieldError(F('郵便番号'), '');
     try {
       const r = await api('zip', { code: z });
       if (r['見つかった']) {
-        form.elements['都道府県'].value = r['都道府県'];
-        form.elements['住所1'].value = r['住所1'];
-        form.elements['住所2'].focus();
+        F('都道府県').value = r['都道府県'];
+        F('住所1').value = r['住所1'];
+        fieldError(F('都道府県'), '');
+        fieldError(F('住所1'), '');
+        F('住所2').focus();
       } else {
         zipMsg.textContent = r['理由']; zipMsg.hidden = false;
       }
@@ -477,12 +620,20 @@ async function viewApply() {
   form.addEventListener('submit', async ev => {
     ev.preventDefault();
     err.hidden = true;
-    if (!form.elements['同意'].checked) {
+    const bad = Object.keys(RULES).filter(n => !check(n));
+    if (bad.length) {
+      F(bad[0]).focus();
+      err.textContent = '入力内容をご確認ください（' + bad.length + 'か所）';
+      err.hidden = false;
+      return;
+    }
+    if (!F('同意').checked) {
       err.textContent = 'ご確認事項への同意にチェックをお願いします';
       err.hidden = false; return;
     }
     const btn = form.querySelector('button[type=submit]');
     btn.disabled = true;
+    btn.textContent = '送信しています…';
     try {
       const fd = new FormData(form);
       const p = {};
@@ -492,6 +643,7 @@ async function viewApply() {
       viewDone(r);
     } catch (e) {
       err.textContent = e.message; err.hidden = false; btn.disabled = false;
+      btn.textContent = 'この内容で申し込む';
     }
   });
   mount(node);

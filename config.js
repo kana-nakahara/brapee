@@ -6,4 +6,6 @@ window.BRAPEE = {
   /* LIFF ID（LINE Developers → LINEログインチャネル「ブラッピー」→ LIFF） */
   LIFF_APPLY: '2011924585-IckE4Lw7',
   LIFF_MYPAGE: '2011924585-ZCzdrUdv',
+  /* 公式アカウントのベーシックID（「LINEで相談する」のリンク先） */
+  OA_ID: '@666vwirw',
 };
