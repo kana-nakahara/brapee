@@ -137,6 +137,16 @@ async function initLiff(liffId, required) {
     liff.login({ redirectUri: location.href });
     return new Promise(() => {});      /* ログイン画面へ遷移する */
   }
+  /* 🔴 LINE の外のブラウザでは、期限（1時間）の切れた IDトークンがそのまま返る。
+        フォーム1はそれでも「未連携」として受け付けてしまう（前回の入力が出ず、LINE と紐づかない）ので、
+        切れていたらログインし直す（261009 実機） */
+  const dec = liff.getDecodedIDToken ? liff.getDecodedIDToken() : null;
+  if (dec && dec.exp * 1000 < Date.now() + 60e3 && !sessionStorage.getItem('relogin')) {
+    sessionStorage.setItem('relogin', '1');
+    liff.logout();
+    liff.login({ redirectUri: location.href });
+    return new Promise(() => {});
+  }
   idToken = liff.getIDToken();
   return !!idToken;
 }
