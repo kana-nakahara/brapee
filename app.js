@@ -264,6 +264,12 @@ async function viewTop() {
     if (pill && a['ステータス配色']) pill.style.background = a['ステータス配色'];
     const b = node.querySelector('[data-go-case]');
     if (b) b.addEventListener('click', () => go('case', a['案件id']));
+    /* お品物はスタッフがチャットの写真をもとに登録する。登録前はそう案内する */
+    const items = me['商品'] || [];
+    node.querySelector('[data-top-items]').innerHTML = items.length ? items.map(p => `
+      <li><span class="nm"><b>${esc(p['品名'])}</b></span>
+        <span class="amt">${p['査定額'] !== null && p['査定額'] !== undefined ? yen(p['査定額']) : (p['概算額'] ? '概算 ' + yen(p['概算額']) : '')}</span></li>`).join('')
+      : '<li class="empty">チャットでお送りいただいた写真をもとに、スタッフが登録します</li>';
     const marks = node.querySelectorAll('.checks b');
     if (marks[0]) marks[0].className = (KYC_LABEL[me['本人確認状況']] || ['', 'st-wait'])[1];
     if (marks[1]) marks[1].className = me['口座登録済'] ? 'st-ok' : 'st-ng';
