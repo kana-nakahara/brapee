@@ -4,15 +4,19 @@
    状態は1つ（state）だけ持ち、view を差し替える。 */
 'use strict';
 
-const CFG = window.BRAPEE || {};
+const CFG = window.BRAPPY || {};
 const PAGE = document.body.dataset.page;
 
 const FLOW = ['申込', 'キット発送', 'キット到達', '集荷', '査定中', '承認待ち', '振込待ち', '入金済み'];
 /* フロー帯の見出しは短くする（幅が狭いため） */
 const FLOW_LABEL = {
-  '申込': '申込', 'キット発送': 'キット', 'キット到達': '到達', '集荷': '集荷',
+  '申込': '申込済', 'キット発送': 'キット', 'キット到達': '到達', '集荷': '集荷',
   '査定中': '査定', '承認待ち': '承認', '振込待ち': '振込', '入金済み': '完了'
 };
+
+/* お客様に見せるステータスの言い方。「申込」のままだとボタンに見えるので、済んだことと分かる語にする */
+const STATUS_LABEL = { '申込': '申込済' };
+const statusLabel = s => STATUS_LABEL[s] || s || '';
 
 const app = document.getElementById('app');
 const tabbar = document.getElementById('tabbar');
@@ -260,7 +264,7 @@ async function viewTop() {
   };
   if (a) Object.assign(d, {
     '受付番号': a['受付番号'],
-    '案件ステータス': a['案件ステータス'],
+    '案件ステータス': statusLabel(a['案件ステータス']),
     '点数つき': (a['点数'] || 0) + '点',
     '集荷日表示': fmtMD(a['集荷希望日']) +
       (a['集荷希望時間帯'] ? ' ' + slotLabel(a['集荷希望時間帯']) : ''),
@@ -346,7 +350,7 @@ async function viewCase(案件id) {
   const a = r['案件'], g = r['口座'];
   const d = {
     '受付番号': a['受付番号'],
-    '案件ステータス': a['案件ステータス'],
+    '案件ステータス': statusLabel(a['案件ステータス']),
     '買取金額あり': a['買取金額'] !== null && a['買取金額'] !== undefined,
     '買取金額表示': yen(a['買取金額']),
     '査定完了日': a['査定確定日時'] ? fmtDate(a['査定確定日時']) + ' 査定完了' : '',
@@ -411,6 +415,75 @@ async function imagePayload(file) {
   return { type: file.type || 'image/jpeg', data: await toB64(file) };
 }
 
+/* ---------------------------------------------------------------- 銀行・支店の選択（data/ のマスタ）
+   マスタは全銀協の金融機関コード（tools/build_banks.js で作る）。選ぶと「名前（コード）」で送る
+   ＝スタッフが振込に使うコードがそのまま残る（例：三井住友銀行(0009)）。支店は選んだ銀行の分だけ取りに行く */
+const bankData = { banks: null, branches: {} };
+async function loadJson(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('一覧を読み込めませんでした');
+  return r.json();
+}
+const codeOf = v => (String(v || '').match(/[（(](\d{3,4})[）)]$/) || [])[1] || '';
+const nameOf = v => String(v || '').replace(/\s*[（(]\d{3,4}[）)]$/, '');
+/* 検索の寄せ：全角/半角・ひらがな/カタカナ・長音の揺れを吸収して前方/部分一致 */
+const pickKey = s => toKata(nfkc(s)).replace(/[ー－‐-]/g, '').replace(/\s/g, '').toUpperCase();
+
+function wirePicker(pk, source, onChoose) {
+  const q = pk.querySelector('[data-pick-q]');
+  const list = pk.querySelector('[data-pick-list]');
+  const hidden = pk.querySelector('input[type=hidden]');
+  const paint = async () => {
+    let rows;
+    try { rows = await source(); } catch (e) { list.innerHTML = `<li class="empty">${esc(e.message)}</li>`; list.hidden = false; return; }
+    const key = pickKey(q.value);
+    const hit = key ? rows.filter(r => r[0].startsWith(key) || pickKey(r[1]).includes(key) || pickKey(r[2]).startsWith(key)) : rows;
+    list.innerHTML = hit.slice(0, 50).map(r =>
+      `<li><button type="button" data-code="${esc(r[0])}" data-name="${esc(r[1])}">${esc(r[1])}<small>${esc(r[0])}</small></button></li>`).join('')
+      || '<li class="empty">見つかりません。名前の一部やカナでお試しください</li>';
+    list.hidden = false;
+  };
+  q.addEventListener('focus', paint);
+  q.addEventListener('input', () => { hidden.value = ''; pk.classList.remove('chosen'); paint(); });
+  list.addEventListener('mousedown', ev => ev.preventDefault());   /* blur で閉じる前にクリックを通す */
+  list.addEventListener('click', ev => {
+    const b = ev.target.closest('button[data-code]');
+    if (!b) return;
+    q.value = b.dataset.name;
+    hidden.value = `${b.dataset.name}(${b.dataset.code})`;   /* GAS が NFKC で半角にするので初めから半角 */
+    pk.classList.add('chosen');
+    list.hidden = true;
+    onChoose && onChoose(b.dataset.code);
+  });
+  q.addEventListener('blur', () => { list.hidden = true; });
+  return {
+    set(v) { hidden.value = v || ''; q.value = nameOf(v); pk.classList.toggle('chosen', !!v); },
+    clear() { this.set(''); },
+    enable(on, ph) { q.disabled = !on; if (ph) q.placeholder = ph; },
+  };
+}
+
+function wireBankPicker(form, g) {
+  let bankCode = codeOf(g['金融機関名']);
+  const branch = wirePicker(form.querySelector('[data-pick=branch]'), async () => {
+    if (!bankCode) return [];
+    if (!bankData.branches[bankCode]) bankData.branches[bankCode] = await loadJson(`data/branches/${bankCode}.json`);
+    return bankData.branches[bankCode];
+  });
+  const bank = wirePicker(form.querySelector('[data-pick=bank]'), async () => {
+    if (!bankData.banks) bankData.banks = await loadJson('data/banks.json');
+    return bankData.banks;
+  }, code => {
+    bankCode = code;
+    branch.clear();
+    branch.enable(true, '支店名・カナで検索（例：本店、シンジユク）');
+  });
+  bank.set(g['金融機関名']);
+  branch.set(g['支店名']);
+  /* コードの無い古い登録（手入力の時代）は、選び直してもらう */
+  if (bankCode) branch.enable(true, '支店名・カナで検索（例：本店、シンジユク）');
+}
+
 async function viewForm2() {
   const r = await api('form2.get');
   const k = r['本人確認'] || {}, g = r['口座'] || {}, a = r['案件'];
@@ -444,6 +517,21 @@ async function viewForm2() {
   });
   if (k['表面登録済'] && !redo) form.querySelector('[name=表面]').closest('label').querySelector('.shot-box').classList.add('set');
   if (k['裏面登録済'] && !redo) form.querySelector('[name=裏面]').closest('label').querySelector('.shot-box').classList.add('set');
+
+  /* 書類の種類で裏面の欄を出し分ける（マイナンバーカード・パスポートは表面のみ） */
+  const noBack = r['マスタ']['裏面不要'] || [];
+  const backShot = form.querySelector('[data-back-shot]');
+  const frontOnly = form.querySelector('[data-front-only]');
+  const syncBack = () => {
+    const off = noBack.indexOf(form.elements['書類種別'].value) >= 0;
+    backShot.hidden = off;
+    frontOnly.hidden = !off;
+    if (off) form.elements['裏面'].value = '';
+  };
+  form.elements['書類種別'].addEventListener('change', syncBack);
+  syncBack();
+
+  wireBankPicker(form, g);
 
   /* 撮ったら見た目を変える */
   form.querySelectorAll('input[type=file]').forEach(inp => {
@@ -485,10 +573,16 @@ async function viewForm2() {
     try {
       const fd = new FormData(form);
       const p = {};
+      /* 検索欄に打っただけで一覧から選んでいない銀行・支店は送らない */
+      form.querySelectorAll('[data-pick]').forEach(pk => {
+        if (pk.querySelector('[data-pick-q]').value.trim() && !pk.querySelector('input[type=hidden]').value) {
+          throw new Error((pk.dataset.pick === 'bank' ? '銀行' : '支店') + 'は一覧からお選びください');
+        }
+      });
       ['書類種別', '職業', '年齢', '金融機関名', '支店名', '口座種別', '口座番号', '口座名義カナ']
         .forEach(n => { p[n] = fd.get(n) || ''; });
       p['表面'] = await imagePayload(form.elements['表面'].files[0]);
-      p['裏面'] = await imagePayload(form.elements['裏面'].files[0]);
+      p['裏面'] = backShot.hidden ? null : await imagePayload(form.elements['裏面'].files[0]);
       await api('form2.post', p);
       ok.hidden = false;
       setTimeout(() => go('top'), 1200);
@@ -529,7 +623,7 @@ function paintHistory() {
     </li>` : `
     <li><button data-case="${esc(r['案件id'])}">
       <div class="r1"><span class="ttl">${esc(r['受付番号'])}</span>
-        <span class="pill" style="background:${esc(r['ステータス配色'] || '#6b7280')}">${esc(r['案件ステータス'])}</span></div>
+        <span class="pill" style="background:${esc(r['ステータス配色'] || '#6b7280')}">${esc(statusLabel(r['案件ステータス']))}</span></div>
       <div class="r2"><span class="dt">${fmtDate(r['申込日時'])} 申し込み ／ ${r['点数'] || 0}点</span>
         <span class="amt">${r['買取金額'] !== null && r['買取金額'] !== undefined ? yen(r['買取金額']) : ''}</span></div>
     </button></li>`).join('');

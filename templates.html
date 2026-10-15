@@ -39,6 +39,7 @@
   </section>
 
   <section class="card case" data-if="案件">
+    <h2 class="t2">お取引進行状況</h2>
     <div class="case-hd">
       <span class="rcpt" data-f="受付番号"></span>
       <span class="pill" data-f="案件ステータス"></span>
@@ -141,14 +142,14 @@
           <input type="file" name="表面" accept="image/*" capture="environment">
           <span class="shot-box"><b>表面</b><em data-f="表面状態">撮影する</em></span>
         </label>
-        <label class="shot">
+        <label class="shot" data-back-shot>
           <input type="file" name="裏面" accept="image/*" capture="environment">
           <span class="shot-box"><b>裏面</b><em data-f="裏面状態">撮影する</em></span>
         </label>
       </div>
       <p class="note">
         文字がはっきり読めるように、明るい場所で撮影してください。
-        マイナンバーカードは表面のみお送りください。
+        <span data-front-only hidden>この書類は表面（顔写真のある面）のみお送りください。</span>
       </p>
       <div class="row">
         <label>ご職業
@@ -161,8 +162,20 @@
 
       <h2 class="t2">2. お振込先</h2>
       <p class="note">🔴 お客様ご本人名義の口座をご登録ください。</p>
-      <label>銀行名 <input name="金融機関名" placeholder="◯◯銀行"></label>
-      <label>支店名 <input name="支店名" placeholder="◯◯支店"></label>
+      <div class="pick" data-pick="bank">
+        <label>銀行名
+          <input type="search" data-pick-q placeholder="銀行名・カナで検索（例：みずほ、ミツイ）" autocomplete="off" enterkeyhint="search">
+        </label>
+        <ul class="pick-list" data-pick-list hidden></ul>
+        <input type="hidden" name="金融機関名">
+      </div>
+      <div class="pick" data-pick="branch">
+        <label>支店名
+          <input type="search" data-pick-q placeholder="先に銀行をお選びください" autocomplete="off" enterkeyhint="search" disabled>
+        </label>
+        <ul class="pick-list" data-pick-list hidden></ul>
+        <input type="hidden" name="支店名">
+      </div>
       <div class="row">
         <label>種別
           <select name="口座種別" data-master="口座種別"></select>
