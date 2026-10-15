@@ -40,7 +40,7 @@ function fmtMD(s) {
 }
 
 /* GAS は text/plain で受ける（application/json はプリフライトになり GAS が応えられない） */
-async function api(action, payload) {
+async function api(action, payload, opt) {
   if (!CFG.GAS_URL) throw new Error('準備中です（API の URL が未設定です）');
   const body = Object.assign({ action, idToken }, payload || {});
   let j = null;
@@ -61,7 +61,7 @@ async function api(action, payload) {
   if (!j) throw new Error('エラーが発生しました');
   if (!j.ok) {
     /* IDトークンの期限切れ。ログインし直して同じ画面へ戻る */
-    if (j.status === 401 && window.liff && liff.isLoggedIn && liff.isLoggedIn() && !sessionStorage.getItem('relogin')) {
+    if (j.status === 401 && !(opt && opt.noRelogin) && window.liff && liff.isLoggedIn && liff.isLoggedIn() && !sessionStorage.getItem('relogin')) {
       sessionStorage.setItem('relogin', '1');
       liff.logout();
       liff.login({ redirectUri: location.href });
@@ -153,13 +153,17 @@ async function initLiff(liffId, required) {
 
 /* ---------------------------------------------------------------- 起動 */
 async function boot() {
-  await loadTemplates();
-  if (PAGE === 'apply') return viewApply();
+  /* GAS は1回3〜4秒かかるので、待ちを直列にしない（テンプレート・LIFF・state・me を重ねる） */
+  const tpl = loadTemplates();
+  if (PAGE === 'apply') return viewApply(tpl);
 
-  await initLiff(CFG.LIFF_MYPAGE, true);
+  await Promise.all([tpl, initLiff(CFG.LIFF_MYPAGE, true)]);
+  /* 未連携なら me は 401 になる。ここでは捨てる（ログインし直しは state の 401 に任せる） */
+  const meP = api('me', null, { noRelogin: true }).catch(() => null);
   const s = await api('state');
   if (!s['連携済']) return viewLogin();
   showChrome(true);
+  state.prefetchedMe = await meP;
   go('top');
 }
 
@@ -240,7 +244,9 @@ function viewLogin() {
 
 /* ---------------------------------------------------------------- M-02 */
 async function viewTop() {
-  const me = state.me = await api('me');
+  const pre = state.prefetchedMe;
+  state.prefetchedMe = null;
+  const me = state.me = pre || await api('me');
   const a = me['案件'];
   const todo = me['未完了'] || [];
   const d = {
@@ -533,12 +539,12 @@ function paintHistory() {
 }
 
 /* ---------------------------------------------------------------- F-01〜F-05 */
-async function viewApply() {
+async function viewApply(tpl) {
   /* LIFF は「取れれば紐づける」。LINE の外や失敗でもフォームは使える
      （未連携で申し込み、あとからマイページの受付番号照合で紐づく）。
      🔴 IDトークンを先に取り、apply.init に渡す（2回目のお客様に前回の入力を返すため） */
   const line = await initLiff(CFG.LIFF_APPLY, false);
-  const init = await api('apply.init');
+  const [init] = await Promise.all([api('apply.init'), tpl]);
   const prev = init['前回'];
 
   const node = render('tpl-apply', {
