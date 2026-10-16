@@ -73,6 +73,33 @@ function busy(on) {
   }
 }
 
+/* ブラウザ標準の confirm / alert は LINE の中で見た目が浮くので、画面になじむシートと小さなお知らせにする */
+function toast(msg) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.setAttribute('role', 'status');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+function askSheet(msg, okLabel) {
+  return new Promise(resolve => {
+    const bg = document.createElement('div');
+    bg.className = 'sheet-bg';
+    bg.innerHTML = `<div class="sheet" role="dialog" aria-modal="true">
+      <p>${esc(msg)}</p>
+      <button class="btn btn-primary" data-ok>${esc(okLabel || 'OK')}</button>
+      <button class="btn-sub" data-cancel>キャンセル</button></div>`;
+    const done = v => { bg.remove(); resolve(v); };
+    bg.addEventListener('click', e => {
+      if (e.target.closest('[data-ok]')) done(true);
+      else if (e.target.closest('[data-cancel]') || e.target === bg) done(false);
+    });
+    document.body.appendChild(bg);
+  });
+}
+
 /* opt.quiet：裏での取り直し（写しを先に出したあとの最新化など）。かぶせない */
 async function api(action, payload, opt) {
   const p = apiCall(action, payload, opt);   /* 本文（idToken）はここで決まる */
@@ -457,14 +484,14 @@ async function viewCase(案件id) {
 
   const btn = node.querySelector('#btnApprove');
   if (btn) btn.addEventListener('click', async () => {
-    if (!confirm('この金額で承認します。よろしいですか。')) return;
+    if (!(await askSheet('この金額で承認します。よろしいですか？', '承認する'))) return;
     btn.disabled = true;
     try {
       await api('approve', { 案件id });
-      alert('承認しました。お振込みの手続きに進みます。');
+      toast('承認しました。お振込みの手続きに進みます');
       go('top');
     } catch (e) {
-      alert(e.message);
+      toast(e.message);
       btn.disabled = false;
     }
   });
@@ -558,12 +585,12 @@ function wireBankPicker(form, g) {
   }, code => {
     bankCode = code;
     branch.clear();
-    branch.enable(true, '支店名・カナで検索（例：本店、シンジユク）');
+    branch.enable(true, '支店名で検索（例：本店）');
   });
   bank.set(g['金融機関名']);
   branch.set(g['支店名']);
   /* コードの無い古い登録（手入力の時代）は、選び直してもらう */
-  if (bankCode) branch.enable(true, '支店名・カナで検索（例：本店、シンジユク）');
+  if (bankCode) branch.enable(true, '支店名で検索（例：本店）');
 }
 
 async function viewForm2() {
@@ -584,7 +611,7 @@ async function viewForm2() {
   /* マスタのプルダウン */
   node.querySelectorAll('[data-master]').forEach(sel => {
     const list = r['マスタ'][sel.dataset.master] || [];
-    sel.innerHTML = '<option value="">選択してください</option>' +
+    sel.innerHTML = '<option value="">選択</option>' +
       list.map(v => `<option>${esc(v)}</option>`).join('');
   });
 
@@ -622,6 +649,11 @@ async function viewForm2() {
       if (inp.files && inp.files[0]) {
         box.classList.add('set');
         box.querySelector('em').textContent = '撮影しました';
+        /* 撮った写真を枠に映す（読めないファイル形式なら枠の色だけ変わる） */
+        try {
+          box.style.backgroundImage = `url("${URL.createObjectURL(inp.files[0])}")`;
+          box.classList.add('has-img');
+        } catch (e) { /* 映せないだけ */ }
       }
     });
   });
@@ -639,7 +671,7 @@ async function viewForm2() {
       inp.addEventListener('change', async () => {
         try {
           await api('item.update', { 案件id: a['案件id'], 案件商品id: inp.dataset.item, 品名: inp.value }, { quiet: true });
-        } catch (e) { alert(e.message); }
+        } catch (e) { toast(e.message); }
       });
     });
   }
@@ -750,7 +782,7 @@ async function viewApply(tpl) {
 
   /* 時間帯 */
   node.querySelector('[name=集荷希望時間帯]').innerHTML =
-    '<option value="">選択してください</option>' +
+    '<option value="">選択</option>' +
     (init['時間帯'] || []).map(v => `<option value="${esc(v)}">${esc(slotLabel(v))}</option>`).join('');
 
   /* 同意事項（F-05） */

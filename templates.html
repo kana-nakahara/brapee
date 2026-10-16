@@ -39,12 +39,15 @@
   </section>
 
   <section class="card case" data-if="案件">
-    <h2 class="t2">お取引進行状況</h2>
-    <div class="case-hd">
-      <span class="rcpt" data-f="受付番号"></span>
-      <span class="pill" data-f="案件ステータス"></span>
+    <div class="case-hero">
+      <h2 class="t2">お取引進行状況</h2>
+      <div class="case-hd">
+        <span class="rcpt" data-f="受付番号"></span>
+        <span class="pill" data-f="案件ステータス"></span>
+      </div>
+      <ol class="flow" data-flow></ol>
     </div>
-    <ol class="flow" data-flow></ol>
+    <div class="case-body">
     <dl class="kv">
       <div><dt>点数</dt><dd data-f="点数つき"></dd></div>
       <div><dt>集荷日</dt><dd data-f="集荷日表示"></dd></div>
@@ -60,6 +63,7 @@
     </button>
     <button class="btn btn-sub" data-view="pickup" data-if="変更できる">集荷日時・キットを変更する</button>
     <a class="btn btn-primary" data-apply-link href="apply.html" data-if="完了">新しく申し込む</a>
+    </div>
   </section>
 
   <section class="card" data-if="案件">
@@ -96,15 +100,18 @@
 <!-- ============ 査定結果の確認・承認（M-07 / M-08） ============ -->
 <template id="tpl-case">
   <button class="back" data-view="top">‹ もどる</button>
-  <section class="card">
-    <div class="case-hd">
-      <span class="rcpt" data-f="受付番号"></span>
-      <span class="pill" data-f="案件ステータス"></span>
+  <section class="card case">
+    <div class="case-hero">
+      <div class="case-hd">
+        <span class="rcpt" data-f="受付番号"></span>
+        <span class="pill" data-f="案件ステータス"></span>
+      </div>
+      <div class="total" data-if="買取金額あり">
+        <b data-f="買取金額表示"></b>
+        <span data-f="査定完了日"></span>
+      </div>
     </div>
-    <div class="total" data-if="買取金額あり">
-      <b data-f="買取金額表示"></b>
-      <span data-f="査定完了日"></span>
-    </div>
+    <div class="case-body">
     <h2 class="t2">明細</h2>
     <ul class="items" data-items></ul>
     <div class="comment" data-if="客向けコメント">
@@ -115,10 +122,11 @@
     <p class="bank" data-f="口座表示"></p>
     <div data-if="承認できる">
       <button class="btn btn-primary" id="btnApprove">この金額で承認する</button>
-      <p class="note">承認いただくとお振込みの手続きに進みます。</p>
+      <p class="note" style="text-align:center">承認いただくとお振込みの手続きに進みます。</p>
     </div>
     <p class="done" data-if="承認済み">✓ 承認済みです。お振込みをお待ちください。</p>
     <a class="btn btn-line" data-line-chat href="#" data-if="承認できる">金額について LINE で相談する</a>
+    </div>
   </section>
 </template>
 
@@ -161,10 +169,10 @@
       </div>
 
       <h2 class="t2">2. お振込先</h2>
-      <p class="note">🔴 お客様ご本人名義の口座をご登録ください。</p>
+      <p class="note">お客様<b>ご本人名義</b>の口座をご登録ください。</p>
       <div class="pick" data-pick="bank">
         <label>銀行名
-          <input type="search" data-pick-q placeholder="銀行名・カナで検索（例：みずほ、ミツイ）" autocomplete="off" enterkeyhint="search">
+          <input type="search" data-pick-q placeholder="銀行名で検索（例：みずほ）" autocomplete="off" enterkeyhint="search">
         </label>
         <ul class="pick-list" data-pick-list hidden></ul>
         <input type="hidden" name="金融機関名">
@@ -192,7 +200,7 @@
       <ul class="items edit" data-items2></ul>
       <p class="note" data-f="商品注記"></p>
 
-      <button class="btn btn-primary" type="submit">登録する</button>
+      <div class="cta"><button class="btn btn-primary" type="submit">登録する</button></div>
       <p class="err" id="form2Err" hidden></p>
       <p class="ok"  id="form2Ok"  hidden>ご登録ありがとうございました。</p>
     </form>
@@ -221,7 +229,7 @@
         </label>
       </div>
       <p class="note">変更はスタッフにも自動でお知らせします。</p>
-      <button class="btn btn-primary" type="submit">変更する</button>
+      <div class="cta"><button class="btn btn-primary" type="submit">変更する</button></div>
       <p class="err" id="pickupErr" hidden></p>
     </form>
   </section>
@@ -306,7 +314,7 @@
       <p class="note">
         本人確認書類とお振込先は、宅配キットの到着後にマイページでご登録いただきます。
       </p>
-      <button class="btn btn-primary" type="submit">この内容で申し込む</button>
+      <div class="cta"><button class="btn btn-primary" type="submit">この内容で申し込む</button></div>
       <p class="err" id="applyErr" hidden></p>
     </form>
   </section>
