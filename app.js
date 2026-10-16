@@ -44,7 +44,8 @@ function fmtMD(s) {
 }
 
 /* 通信中は画面に薄く白をかぶせ、くるくるを出す（二度押し防止も兼ねる）。
-   すぐ返る通信でちらつかないよう 150ms 待ってから出す。開いた直後の全面くるくる（.loading）が出ている間は重ねない */
+   すぐ返る通信でちらつかないよう 150ms 待ってから出す。
+   開いた直後（フォームのくるくる .loading・マイページの枠 .skel）が出ている間は重ねない */
 let busyN = 0, busyT = null;
 function busy(on) {
   let el = document.getElementById('busy');
@@ -61,7 +62,7 @@ function busy(on) {
   if (busyN > 0 && !busyT && !el.classList.contains('on')) {
     busyT = setTimeout(() => {
       busyT = null;
-      if (busyN > 0 && !app.querySelector(':scope > .loading')) el.classList.add('on');
+      if (busyN > 0 && !app.querySelector(':scope > .loading, :scope > .skel')) el.classList.add('on');
     }, 150);
   }
   if (busyN === 0) {

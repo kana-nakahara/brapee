@@ -266,3 +266,12 @@ a.btn{text-decoration:none;margin-top:12px}
 .pick-list li button small{color:var(--sub); font-size:11px}
 .pick-list li.empty{padding:10px 12px; font-size:12px; color:var(--sub)}
 .pick.chosen input[data-pick-q]{border-color:var(--ok)}
+
+/* マイページを開いた瞬間の枠（スケルトン）。値の場所だけ灰色の帯を光らせる。押せない */
+.skel button,.skel a{pointer-events:none}
+.sk{display:inline-block; height:.9em; vertical-align:middle; border-radius:6px;
+  background:linear-gradient(90deg,#e9ecef 0%,#f5f6f8 50%,#e9ecef 100%); background-size:200% 100%;
+  animation:sk-shine 1.2s ease-in-out infinite}
+.sk-pill{width:5em; height:1.6em; border-radius:999px}
+@keyframes sk-shine{from{background-position:100% 0} to{background-position:-100% 0}}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}

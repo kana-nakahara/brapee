@@ -22,7 +22,39 @@
 </header>
 
 <main id="app" class="wrap">
-  <div class="loading" role="status" aria-label="読み込み中"><span class="spinner"></span></div>
+  <!-- 開いた瞬間に出すトップの枠（スピナーで真っ白にしない）。見出し・項目名は固定、お客様ごとの値は灰色の仮表示。
+       データが届いたら app.js が tpl-top で描き直す。項目を変えたら templates.html の tpl-top と揃える -->
+  <div class="skel" aria-busy="true" aria-label="読み込み中">
+    <section class="greet">
+      <div class="greet-name"><span class="sk" style="width:7em"></span> さま</div>
+      <div class="greet-sub">LINEアカウントでログイン中</div>
+    </section>
+    <section class="card case">
+      <h2 class="t2">お取引進行状況</h2>
+      <div class="case-hd"><span class="sk" style="width:10em"></span><span class="sk sk-pill"></span></div>
+      <ol class="flow"><li>申込済</li><li>キット</li><li>到達</li><li>集荷</li><li>査定</li><li>承認</li><li>振込</li><li>完了</li></ol>
+      <dl class="kv">
+        <div><dt>点数</dt><dd><span class="sk" style="width:2.5em"></span></dd></div>
+        <div><dt>集荷日</dt><dd><span class="sk" style="width:5em"></span></dd></div>
+        <div><dt>キット</dt><dd><span class="sk" style="width:2.5em"></span></dd></div>
+      </dl>
+      <h2 class="t2">お品物</h2>
+      <ul class="items">
+        <li><span class="sk" style="width:60%"></span><span class="sk" style="width:5em"></span></li>
+        <li><span class="sk" style="width:45%"></span><span class="sk" style="width:5em"></span></li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2 class="t2">ご登録の状況</h2>
+      <ul class="checks">
+        <li><span>本人確認書類</span><span class="sk" style="width:4em"></span></li>
+        <li><span>お振込先</span><span class="sk" style="width:4em"></span></li>
+      </ul>
+    </section>
+    <section class="menu"><button type="button" tabindex="-1">取引履歴・査定履歴・入金履歴 <i>›</i></button></section>
+    <a class="btn btn-line" href="#" tabindex="-1">LINEでスタッフに相談する</a>
+    <p class="fine">ご住所・お電話番号の変更は、LINEのトークからスタッフへご連絡ください。</p>
+  </div>
 </main>
 
 <nav class="tabbar" id="tabbar" hidden>
