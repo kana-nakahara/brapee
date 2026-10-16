@@ -58,9 +58,14 @@
     <div class="amount" data-if="買取金額あり">
       <span>買取金額</span><b data-f="買取金額表示"></b>
     </div>
-    <button class="btn btn-primary" data-go-case data-if="承認できる">
-      査定結果を確認して承認する
-    </button>
+    <!-- 261015 上野様 FB：スタッフのコメントは TOP に出し、承認は TOP のボタン → 確認シート → 確定（明細画面を経由しない） -->
+    <div class="comment" data-if="客向けコメント">
+      <h2 class="t2">スタッフからのコメント</h2>
+      <p data-f="客向けコメント"></p>
+    </div>
+    <p class="note" data-if="承認できる" style="text-align:center">この金額はまだ確定していません。承認いただくと確定し、お振込みの手続きに進みます。</p>
+    <button class="btn btn-primary" id="btnApproveTop" data-if="承認できる">この金額で承認する</button>
+    <button class="btn btn-sub" data-go-case data-if="承認できる">明細を見る・相談する</button>
     <button class="btn btn-sub" data-view="pickup" data-if="変更できる">集荷日時・キットを変更する</button>
     <a class="btn btn-primary" data-apply-link href="apply.html" data-if="完了">新しく申し込む</a>
     </div>
@@ -197,8 +202,8 @@
       </label>
 
       <h2 class="t2">3. お品物の確認</h2>
-      <ul class="items edit" data-items2></ul>
-      <p class="note" data-f="商品注記"></p>
+      <ul class="items" data-items2></ul>
+      <p class="note">お品物の内容に相違があるときは、LINEのトークからスタッフへご連絡ください。</p>
 
       <div class="cta"><button class="btn btn-primary" type="submit">登録する</button></div>
       <p class="err" id="form2Err" hidden></p>

@@ -381,6 +381,7 @@ async function viewTop() {
     '買取金額あり': a['買取金額'] !== null && a['買取金額'] !== undefined,
     '買取金額表示': yen(a['買取金額']),
     '承認できる': a['案件ステータス'] === '承認待ち',
+    '客向けコメント': a['客向けコメント'] || '',
     '変更できる': PICKUP_EDITABLE.indexOf(a['案件ステータス']) >= 0,
     '本人確認表示': (KYC_LABEL[me['本人確認状況']] || [me['本人確認状況']])[0],
     '口座表示': me['口座登録済'] ? '登録済み' : '未登録'
@@ -393,6 +394,9 @@ async function viewTop() {
     if (pill && a['ステータス配色']) pill.style.background = a['ステータス配色'];
     const b = node.querySelector('[data-go-case]');
     if (b) b.addEventListener('click', () => go('case', a['案件id']));
+    /* 承認は TOP で完結（確認シート → 確定）。明細画面からも承認できる */
+    const ba = node.querySelector('#btnApproveTop');
+    if (ba) ba.addEventListener('click', () => approveCase(a['案件id'], ba));
     /* お品物はスタッフがチャットの写真をもとに登録する。登録前はそう案内する */
     const items = me['商品'] || [];
     node.querySelector('[data-top-items]').innerHTML = items.length ? items.map(p => `
@@ -483,20 +487,26 @@ async function viewCase(案件id) {
     </li>`).join('') || '<li class="empty">お品物がありません</li>';
 
   const btn = node.querySelector('#btnApprove');
-  if (btn) btn.addEventListener('click', async () => {
-    if (!(await askSheet('この金額で承認します。よろしいですか？', '承認する'))) return;
-    btn.disabled = true;
-    try {
-      await api('approve', { 案件id });
-      toast('承認しました。お振込みの手続きに進みます');
-      go('top');
-    } catch (e) {
-      toast(e.message);
-      btn.disabled = false;
-    }
-  });
+  if (btn) btn.addEventListener('click', () => approveCase(案件id, btn));
   wireLineChat(node);
   mount(node);
+}
+
+/** M-08 承認（TOP と明細の両方から）。確認シートで確かめてから確定する */
+async function approveCase(案件id, btn) {
+  const amt = state.me && state.me['案件'] && state.me['案件']['案件id'] === 案件id ? state.me['案件']['買取金額'] : null;
+  const msg = (amt !== null && amt !== undefined ? '買取金額 ' + yen(amt) + ' で承認します。' : 'この金額で承認します。') + 'よろしいですか？';
+  if (!(await askSheet(msg, '承認する'))) return;
+  btn.disabled = true;
+  try {
+    await api('approve', { 案件id });
+    dropStore('me');
+    toast('承認しました。お振込みの手続きに進みます');
+    go('top');
+  } catch (e) {
+    toast(e.message);
+    btn.disabled = false;
+  }
 }
 
 /* ---------------------------------------------------------------- M-04 / M-05 / M-06 */
@@ -595,8 +605,7 @@ function wireBankPicker(form, g) {
 
 async function viewForm2() {
   const r = await api('form2.get');
-  const k = r['本人確認'] || {}, g = r['口座'] || {}, a = r['案件'];
-  const 修正可 = a && ['申込', 'キット発送', 'キット到達'].indexOf(a['案件ステータス']) >= 0;
+  const k = r['本人確認'] || {}, g = r['口座'] || {};
   /* 要再提出のときは「登録済み」と見せない（撮り直しが要る） */
   const redo = k['確認状況'] === '要再提出';
   const node = render('tpl-form2', {
@@ -604,8 +613,6 @@ async function viewForm2() {
     '確認済': k['確認状況'] === '確認済',
     '表面状態': redo ? '撮り直す' : (k['表面登録済'] ? '登録済み' : '撮影する'),
     '裏面状態': redo ? '撮り直す' : (k['裏面登録済'] ? '登録済み' : '撮影する'),
-    '商品注記': 修正可 ? '品名は集荷までご修正いただけます。'
-      : '集荷後のお品物は画面から変更できません。LINEでご連絡ください。'
   });
 
   /* マスタのプルダウン */
@@ -658,23 +665,11 @@ async function viewForm2() {
     });
   });
 
-  /* お品物（M-06） */
-  const ul = node.querySelector('[data-items2]');
-  ul.innerHTML = (r['商品'] || []).map(p => `
-    <li>${修正可
-      ? `<input data-item="${esc(p['案件商品id'])}" value="${esc(p['品名'])}">`
-      : `<span class="nm"><b>${esc(p['品名'])}</b></span>
-         <span class="amt">${p['概算額'] ? '概算 ' + yen(p['概算額']) : ''}</span>`}
-    </li>`).join('') || '<li class="empty">お品物がありません</li>';
-  if (修正可) {
-    ul.querySelectorAll('input[data-item]').forEach(inp => {
-      inp.addEventListener('change', async () => {
-        try {
-          await api('item.update', { 案件id: a['案件id'], 案件商品id: inp.dataset.item, 品名: inp.value }, { quiet: true });
-        } catch (e) { toast(e.message); }
-      });
-    });
-  }
+  /* お品物（M-06）。261015 上野様 FB：お客様は変えられない（見るだけ。相違は LINE で） */
+  node.querySelector('[data-items2]').innerHTML = (r['商品'] || []).map(p => `
+    <li><span class="nm"><b>${esc(p['品名'])}</b></span>
+      <span class="amt">${p['概算額'] ? '概算 ' + yen(p['概算額']) : ''}</span></li>`).join('')
+    || '<li class="empty">お品物がありません</li>';
 
   const err = node.querySelector('#form2Err'), ok = node.querySelector('#form2Ok');
   form.addEventListener('submit', async ev => {
