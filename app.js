@@ -159,19 +159,22 @@ async function initLiff(liffId, required) {
    GAS は冷えていると1回数秒かかる。開いた瞬間は前回の内容を出し、裏で取った最新に差し替える。
    LINE ユーザーごとに分けて持つ（同じ端末で別の LINE に切り替えても混ざらない）。1日で捨てる */
 const STORE_TTL = 24 * 3600e3;
-function storeKey(name) {
-  const dec = window.liff && liff.getDecodedIDToken && !CFG.DEV_API ? liff.getDecodedIDToken() : null;
+/* shared=true は誰にでも同じ内容（キット・時間帯など）。LINE の準備を待たずに読み書きできる */
+function storeKey(name, shared) {
+  if (CFG.DEV_API) return null;
+  if (shared) return `brappy:${name}`;
+  const dec = window.liff && liff.getDecodedIDToken ? liff.getDecodedIDToken() : null;
   return dec && dec.sub ? `brappy:${name}:${dec.sub}` : null;
 }
-function loadStore(name) {
+function loadStore(name, shared) {
   try {
-    const k = storeKey(name);
+    const k = storeKey(name, shared);
     const j = k && JSON.parse(localStorage.getItem(k) || 'null');
     return j && Date.now() - j.t < STORE_TTL ? j.v : null;
   } catch (e) { return null; }
 }
-function saveStore(name, v) {
-  try { const k = storeKey(name); if (k && v) localStorage.setItem(k, JSON.stringify({ t: Date.now(), v })); } catch (e) { /* 残せないだけ */ }
+function saveStore(name, v, shared) {
+  try { const k = storeKey(name, shared); if (k && v) localStorage.setItem(k, JSON.stringify({ t: Date.now(), v })); } catch (e) { /* 残せないだけ */ }
 }
 function dropStore(name) {
   try { const k = storeKey(name); if (k) localStorage.removeItem(k); } catch (e) { /* なし */ }
@@ -673,14 +676,18 @@ function paintHistory() {
 async function viewApply(tpl) {
   /* LIFF は「取れれば紐づける」。LINE の外や失敗でもフォームは使える
      （未連携で申し込み、あとからマイページの受付番号照合で紐づく）。
-     🔴 IDトークンを先に取り、apply.init に渡す（2回目のお客様に前回の入力を返すため） */
-  const line = await initLiff(CFG.LIFF_APPLY, false);
-  /* キット・時間帯・前回の入力は端末の写しがあればすぐ出す。最新は裏で取って次回に使う */
-  const initP = api('apply.init').then(j => { saveStore('init', j); return j; });
-  const cachedInit = loadStore('init');
+     初回が遅かった（261016 実機 3〜5 秒）ので待ちを重ねない：
+     - キット・時間帯・同意事項は誰にでも同じ。LIFF を待たずに IDトークンなしで取りにいく（LINE への問い合わせもしない）
+     - 前回の入力（2回目のお客様）は LIFF の後に IDトークンつきで取り、来たら空欄だけ埋める
+     どちらも端末の写しがあればすぐ出し、最新は裏で取って次回に使う */
+  const initP = api('apply.init').then(j => { saveStore('init', j, true); return j; });   /* ここではまだ idToken が無い */
+  const cachedInit = loadStore('init', true);
   if (cachedInit) initP.catch(() => {});
-  const [init] = await Promise.all([cachedInit || initP, tpl]);
-  const prev = init['前回'];
+  const [init, line] = await Promise.all([cachedInit || initP, initLiff(CFG.LIFF_APPLY, false), tpl]);
+  const prev = line ? loadStore('prev') : null;
+  const prevP = line
+    ? api('apply.init').then(j => { saveStore('prev', j['前回'] || {}); return j['前回']; }).catch(() => null)
+    : Promise.resolve(null);
 
   const node = render('tpl-apply', {
     '入口説明': line
@@ -712,16 +719,23 @@ async function viewApply(tpl) {
   const err = node.querySelector('#applyErr');
   const F = n => form.elements[n];
 
-  /* 2回目以降：前回のお名前・ご住所を入れておく（変わっていれば直してもらう） */
-  if (prev) {
+  /* 2回目以降：前回のお名前・ご住所を入れておく（変わっていれば直してもらう）。
+     後から届いたときは、お客様がもう打ち始めた欄は上書きしない */
+  const fillPrev = pv => {
+    if (!pv || !Object.keys(pv).length) return;
+    let filled = false;
     ['顧客名', '顧客名カナ', '電話番号', '郵便番号', '都道府県', '住所1', '住所2'].forEach(n => {
-      if (prev[n] && F(n)) F(n).value = prev[n];
+      if (pv[n] && F(n) && !F(n).value) { F(n).value = pv[n]; filled = true; }
     });
-    const note = document.createElement('p');
-    note.className = 'prefill';
-    note.textContent = '前回のお名前・ご住所を入れてあります。変わっていればお直しください。';
-    form.insertBefore(note, form.firstChild);
-  }
+    if (filled && !form.querySelector('.prefill')) {
+      const note = document.createElement('p');
+      note.className = 'prefill';
+      note.textContent = '前回のお名前・ご住所を入れてあります。変わっていればお直しください。';
+      form.insertBefore(note, form.firstChild);
+    }
+  };
+  fillPrev(prev);
+  prevP.then(fillPrev);
 
   /* 集荷希望日は翌々日を既定に、過去日は選べないようにする（日本時間で数える） */
   const dt = F('集荷希望日');
