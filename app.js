@@ -43,8 +43,48 @@ function fmtMD(s) {
   return isNaN(d) ? s : `${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
-/* GAS は text/plain で受ける（application/json はプリフライトになり GAS が応えられない） */
+/* 通信中は画面に薄く白をかぶせ、くるくるを出す（二度押し防止も兼ねる）。
+   すぐ返る通信でちらつかないよう 150ms 待ってから出す。開いた直後の全面くるくる（.loading）が出ている間は重ねない */
+let busyN = 0, busyT = null;
+function busy(on) {
+  let el = document.getElementById('busy');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'busy';
+    el.className = 'busy';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-label', '読み込み中');
+    el.innerHTML = '<span class="spinner"></span>';
+    document.body.appendChild(el);
+  }
+  busyN = Math.max(0, busyN + (on ? 1 : -1));
+  if (busyN > 0 && !busyT && !el.classList.contains('on')) {
+    busyT = setTimeout(() => {
+      busyT = null;
+      if (busyN > 0 && !app.querySelector(':scope > .loading')) el.classList.add('on');
+    }, 150);
+  }
+  if (busyN === 0) {
+    clearTimeout(busyT);
+    busyT = null;
+    el.classList.remove('on');
+  }
+}
+
+/* opt.quiet：裏での取り直し（写しを先に出したあとの最新化など）。かぶせない */
 async function api(action, payload, opt) {
+  const p = apiCall(action, payload, opt);   /* 本文（idToken）はここで決まる */
+  if (opt && opt.quiet) return p;
+  busy(true);
+  try {
+    return await p;
+  } finally {
+    busy(false);
+  }
+}
+
+/* GAS は text/plain で受ける（application/json はプリフライトになり GAS が応えられない） */
+async function apiCall(action, payload, opt) {
   if (!CFG.GAS_URL) throw new Error('準備中です（API の URL が未設定です）');
   const body = Object.assign({ action, idToken }, payload || {});
   let j = null;
@@ -188,14 +228,14 @@ async function boot() {
 
   await Promise.all([tpl, initLiff(CFG.LIFF_MYPAGE, true)]);
   /* 未連携なら me は 401 になる。ここでは捨てる（ログインし直しは state の 401 に任せる） */
-  const meP = api('me', null, { noRelogin: true }).catch(() => null);
   const cached = loadStore('me');
+  const meP = api('me', null, { noRelogin: true, quiet: !!cached }).catch(() => null);
   if (cached) {
     showChrome(true);
     state.prefetchedMe = cached;
     go('top');
   }
-  const s = await api('state');
+  const s = await api('state', null, { quiet: !!cached });
   if (!s['連携済']) { dropStore('me'); return viewLogin(); }
   const me = await meP;
   if (me) saveStore('me', me);
@@ -596,7 +636,7 @@ async function viewForm2() {
     ul.querySelectorAll('input[data-item]').forEach(inp => {
       inp.addEventListener('change', async () => {
         try {
-          await api('item.update', { 案件id: a['案件id'], 案件商品id: inp.dataset.item, 品名: inp.value });
+          await api('item.update', { 案件id: a['案件id'], 案件商品id: inp.dataset.item, 品名: inp.value }, { quiet: true });
         } catch (e) { alert(e.message); }
       });
     });
@@ -610,6 +650,7 @@ async function viewForm2() {
     btn.disabled = true;
     const label = btn.textContent;
     btn.textContent = '送信しています…';
+    busy(true);   /* 写真を縮める間も（通信の前から）かぶせる */
     try {
       const fd = new FormData(form);
       const p = {};
@@ -629,6 +670,7 @@ async function viewForm2() {
     } catch (e) {
       err.textContent = e.message; err.hidden = false;
     } finally {
+      busy(false);
       btn.disabled = false;
       btn.textContent = label;
     }
@@ -680,13 +722,14 @@ async function viewApply(tpl) {
      - キット・時間帯・同意事項は誰にでも同じ。LIFF を待たずに IDトークンなしで取りにいく（LINE への問い合わせもしない）
      - 前回の入力（2回目のお客様）は LIFF の後に IDトークンつきで取り、来たら空欄だけ埋める
      どちらも端末の写しがあればすぐ出し、最新は裏で取って次回に使う */
-  const initP = api('apply.init').then(j => { saveStore('init', j, true); return j; });   /* ここではまだ idToken が無い */
   const cachedInit = loadStore('init', true);
+  const initP = api('apply.init', null, { quiet: !!cachedInit })   /* ここではまだ idToken が無い */
+    .then(j => { saveStore('init', j, true); return j; });
   if (cachedInit) initP.catch(() => {});
   const [init, line] = await Promise.all([cachedInit || initP, initLiff(CFG.LIFF_APPLY, false), tpl]);
   const prev = line ? loadStore('prev') : null;
   const prevP = line
-    ? api('apply.init').then(j => { saveStore('prev', j['前回'] || {}); return j['前回']; }).catch(() => null)
+    ? api('apply.init', null, { quiet: true }).then(j => { saveStore('prev', j['前回'] || {}); return j['前回']; }).catch(() => null)
     : Promise.resolve(null);
 
   const node = render('tpl-apply', {
