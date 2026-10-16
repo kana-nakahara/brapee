@@ -28,6 +28,7 @@ button,input,select{font:inherit;color:inherit}
   padding-top:calc(10px + env(safe-area-inset-top));
 }
 .hd-logo{font-weight:700; letter-spacing:.06em}
+button.hd-logo{background:none; border:0; padding:0; color:inherit; font:inherit; font-weight:700; cursor:pointer}
 .hd-out{background:none;border:1px solid rgba(255,255,255,.35);color:#fff;
   border-radius:999px;padding:4px 12px;font-size:12px}
 

@@ -21,6 +21,7 @@ const statusLabel = s => STATUS_LABEL[s] || s || '';
 const app = document.getElementById('app');
 const tabbar = document.getElementById('tabbar');
 const btnLogout = document.getElementById('btnLogout');
+const btnHome = document.getElementById('btnHome');
 
 let state = { view: 'top', me: null, case: null, seg: '取引', hist: null };
 let idToken = null;
@@ -890,6 +891,10 @@ if (tabbar) tabbar.addEventListener('click', e => {
 app.addEventListener('click', e => {
   const b = e.target.closest('button[data-view]');
   if (b) go(b.dataset.view);
+});
+/* 左上のロゴでマイページのトップへ戻る。ログイン前（受付番号の照合画面など）は何もしない */
+if (btnHome) btnHome.addEventListener('click', () => {
+  if (tabbar && !tabbar.hidden) go('top');
 });
 if (btnLogout) btnLogout.addEventListener('click', () => {
   if (window.liff && liff.isLoggedIn()) liff.logout();
