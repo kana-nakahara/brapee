@@ -155,6 +155,28 @@ async function initLiff(liffId, required) {
   return !!idToken;
 }
 
+/* ---------------------------------------------------------------- 端末に残す写し
+   GAS は冷えていると1回数秒かかる。開いた瞬間は前回の内容を出し、裏で取った最新に差し替える。
+   LINE ユーザーごとに分けて持つ（同じ端末で別の LINE に切り替えても混ざらない）。1日で捨てる */
+const STORE_TTL = 24 * 3600e3;
+function storeKey(name) {
+  const dec = window.liff && liff.getDecodedIDToken && !CFG.DEV_API ? liff.getDecodedIDToken() : null;
+  return dec && dec.sub ? `brappy:${name}:${dec.sub}` : null;
+}
+function loadStore(name) {
+  try {
+    const k = storeKey(name);
+    const j = k && JSON.parse(localStorage.getItem(k) || 'null');
+    return j && Date.now() - j.t < STORE_TTL ? j.v : null;
+  } catch (e) { return null; }
+}
+function saveStore(name, v) {
+  try { const k = storeKey(name); if (k && v) localStorage.setItem(k, JSON.stringify({ t: Date.now(), v })); } catch (e) { /* 残せないだけ */ }
+}
+function dropStore(name) {
+  try { const k = storeKey(name); if (k) localStorage.removeItem(k); } catch (e) { /* なし */ }
+}
+
 /* ---------------------------------------------------------------- 起動 */
 async function boot() {
   /* GAS は1回3〜4秒かかるので、待ちを直列にしない（テンプレート・LIFF・state・me を重ねる） */
@@ -164,11 +186,25 @@ async function boot() {
   await Promise.all([tpl, initLiff(CFG.LIFF_MYPAGE, true)]);
   /* 未連携なら me は 401 になる。ここでは捨てる（ログインし直しは state の 401 に任せる） */
   const meP = api('me', null, { noRelogin: true }).catch(() => null);
+  const cached = loadStore('me');
+  if (cached) {
+    showChrome(true);
+    state.prefetchedMe = cached;
+    go('top');
+  }
   const s = await api('state');
-  if (!s['連携済']) return viewLogin();
-  showChrome(true);
-  state.prefetchedMe = await meP;
-  go('top');
+  if (!s['連携済']) { dropStore('me'); return viewLogin(); }
+  const me = await meP;
+  if (me) saveStore('me', me);
+  if (!cached) {
+    showChrome(true);
+    state.prefetchedMe = me;
+    go('top');
+  } else if (me && state.view === 'top' && JSON.stringify(me) !== JSON.stringify(cached)) {
+    /* 写しと違っていたら、まだ TOP にいるときだけ最新で描き直す（ほかの画面へ移っていたら邪魔しない） */
+    state.prefetchedMe = me;
+    go('top');
+  }
 }
 
 function go(view, arg) {
@@ -251,6 +287,7 @@ async function viewTop() {
   const pre = state.prefetchedMe;
   state.prefetchedMe = null;
   const me = state.me = pre || await api('me');
+  if (!pre) saveStore('me', me);
   const a = me['案件'];
   const todo = me['未完了'] || [];
   const d = {
@@ -638,7 +675,11 @@ async function viewApply(tpl) {
      （未連携で申し込み、あとからマイページの受付番号照合で紐づく）。
      🔴 IDトークンを先に取り、apply.init に渡す（2回目のお客様に前回の入力を返すため） */
   const line = await initLiff(CFG.LIFF_APPLY, false);
-  const [init] = await Promise.all([api('apply.init'), tpl]);
+  /* キット・時間帯・前回の入力は端末の写しがあればすぐ出す。最新は裏で取って次回に使う */
+  const initP = api('apply.init').then(j => { saveStore('init', j); return j; });
+  const cachedInit = loadStore('init');
+  if (cachedInit) initP.catch(() => {});
+  const [init] = await Promise.all([cachedInit || initP, tpl]);
   const prev = init['前回'];
 
   const node = render('tpl-apply', {
