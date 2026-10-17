@@ -1,18 +1,19 @@
 /* ブラッピー マイページ・お申し込み — スマートフォン前提（LINEアプリ内ブラウザで開く）
-   261016 全面改装：温かみのある白地に黒とゴールド。ロジックは app.js のまま、見た目と操作感だけを変えた。
+   261016 全面改装：温かみのある白地に黒とゴールド → 261017 ブランドのアセット（赤いハートのロゴ・クリーム地・肉球）に合わせて
+   白×ブラッピーレッドへ。ロジックは app.js のまま、見た目と操作感だけを変えた。本デザインが来たら、ここの変数とロゴを差し替える。
    🔴 app.js が組み立てる部品のクラス（.pill .flow li.done/.now .items .nm .amt .checks b.st-* .kits .kb
       .shot-box.set .pick-list .prefill .field-err .busy .spinner .sk など）は名前を変えない */
 :root{
-  --bg:#f4f2ee; --card:#fff; --ink:#16181d; --sub:#6b6f76; --mute:#9a9ea6; --line:#e8e5df;
-  --brand:#16181d; --gold:#b08d57; --gold-ink:#8a6a3a; --gold-soft:#f5efe4;
-  --accent:#16181d; --accent-ink:#fff;
-  --ok:#1f8a5b; --ok-soft:#e8f5ee; --warn:#b7791f; --warn-soft:#fdf4e3;
+  --bg:#fbf8f4; --card:#fff; --ink:#3b2b28; --sub:#7d6b67; --mute:#ab9c98; --line:#f1e3df;
+  --brand:#d62a36; --red:#d62a36; --red-ink:#b8232e; --pink:#fbe9e9; --pink-line:#f3c9c9;
+  --accent:#d62a36; --accent-ink:#fff;
+  --ok:#3b8a3a; --ok-soft:#eef5e4; --warn:#b7791f; --warn-soft:#fdf4e3;
   --danger:#c53030; --danger-soft:#fdeeee;
   --line-green:#06c755;
-  --hero1:#22252c; --hero2:#121418;
+  --hero1:#fbe9e9; --hero2:#fdf1ef;
   --r:20px; --r-sm:14px; --pad:18px;
-  --shadow:0 1px 2px rgba(22,24,29,.04),0 8px 24px rgba(22,24,29,.06);
-  --shadow-lg:0 12px 40px rgba(22,24,29,.18);
+  --shadow:0 1px 2px rgba(120,60,60,.04),0 8px 24px rgba(120,60,60,.07);
+  --shadow-lg:0 12px 40px rgba(120,60,60,.18);
   --tab-h:64px;
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
@@ -37,13 +38,15 @@ a{color:inherit}
   position:sticky; top:0; z-index:30; display:flex; align-items:center;
   justify-content:space-between; gap:8px;
   padding:12px var(--pad); padding-top:calc(12px + env(safe-area-inset-top));
-  background:rgba(244,242,238,.82); color:var(--ink);
+  background:rgba(251,248,244,.86); color:var(--ink);
   -webkit-backdrop-filter:saturate(180%) blur(16px); backdrop-filter:saturate(180%) blur(16px);
-  border-bottom:1px solid rgba(22,24,29,.06);
+  border-bottom:1px solid rgba(214,42,54,.08);
 }
-.hd-logo{font-weight:800; font-size:19px; letter-spacing:.04em; line-height:1}
-.hd-logo::after{content:""; display:inline-block; width:6px; height:6px; margin-left:3px;
-  border-radius:50%; background:var(--gold); vertical-align:2px}
+/* ロゴ「Brappy」：赤いハート型の B（アセットのロゴの簡易版。本番のロゴ画像が来たらここを差し替える） */
+.hd-logo{display:inline-flex; align-items:center; gap:6px; font-weight:800; font-size:19px;
+  letter-spacing:.02em; line-height:1; color:var(--red)}
+.hd-logo::before{content:""; width:22px; height:22px; flex:none; background:no-repeat center/contain
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23d62a36' d='M12 21.5l-1.3-1.2C5.6 15.7 2.5 12.9 2.5 9.3 2.5 6.4 4.8 4 7.7 4c1.7 0 3.3.8 4.3 2.1C13 4.8 14.6 4 16.3 4c2.9 0 5.2 2.4 5.2 5.3 0 3.6-3.1 6.4-8.2 11z'/%3E%3Cpath fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M9.5 8.2v8h3a2 2 0 0 0 0-4h-3m0 0h2.6a2 2 0 0 0 0-4H9.5'/%3E%3C/svg%3E")}
 button.hd-logo{background:none; border:0; padding:4px 0; color:inherit}
 .hd-out{background:var(--card); border:1px solid var(--line); color:var(--sub);
   border-radius:999px; padding:5px 14px; font-size:12px}
@@ -51,7 +54,7 @@ button.hd-logo{background:none; border:0; padding:4px 0; color:inherit}
 /* ---- タブバー ---- */
 .tabbar{
   position:fixed; left:0; right:0; bottom:0; z-index:30; display:flex;
-  background:rgba(255,255,255,.88); border-top:1px solid rgba(22,24,29,.06);
+  background:rgba(255,255,255,.9); border-top:1px solid rgba(214,42,54,.08);
   -webkit-backdrop-filter:saturate(180%) blur(16px); backdrop-filter:saturate(180%) blur(16px);
   padding-bottom:env(safe-area-inset-bottom);
 }
@@ -62,9 +65,9 @@ button.hd-logo{background:none; border:0; padding:4px 0; color:inherit}
 }
 .tabbar svg{width:24px; height:24px; stroke:currentColor; fill:none; stroke-width:1.8;
   stroke-linecap:round; stroke-linejoin:round}
-.tabbar button.on{color:var(--ink); font-weight:700}
+.tabbar button.on{color:var(--red); font-weight:700}
 .tabbar button.on::before{content:""; position:absolute; top:0; width:22px; height:3px;
-  border-radius:0 0 3px 3px; background:var(--gold)}
+  border-radius:0 0 3px 3px; background:var(--red)}
 
 /* ---- レイアウト ---- */
 .wrap{max-width:520px; margin:0 auto; padding:14px var(--pad) var(--pad)}
@@ -79,12 +82,12 @@ button.hd-logo{background:none; border:0; padding:4px 0; color:inherit}
 .loading{text-align:center; padding:96px 0}
 /* 読み込み中のくるくる（GIF を使わず CSS で回す。どの解像度でもにじまない） */
 .spinner{display:inline-block; width:38px; height:38px; border-radius:50%;
-  border:3px solid rgba(22,24,29,.1); border-top-color:var(--gold); animation:spin .75s linear infinite}
+  border:3px solid var(--pink); border-top-color:var(--red); animation:spin .75s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion: reduce){.spinner{animation-duration:2.4s} .wrap > *{animation:none}}
 /* 通信中に画面へ薄くかぶせる白（押せないようにして二度押しを防ぐ） */
 .busy{position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center;
-  background:rgba(244,242,238,.62); opacity:0; visibility:hidden; transition:opacity .18s, visibility .18s}
+  background:rgba(251,248,244,.62); opacity:0; visibility:hidden; transition:opacity .18s, visibility .18s}
 .busy .spinner{box-shadow:0 0 0 10px rgba(255,255,255,.9); background:rgba(255,255,255,.9)}
 .busy.on{opacity:1; visibility:visible}
 
@@ -108,19 +111,19 @@ button.hd-logo{background:none; border:0; padding:4px 0; color:inherit}
 
 /* ---- ボタン ---- */
 .btn{display:flex; align-items:center; justify-content:center; gap:8px;
-  width:100%; min-height:54px; border:0; border-radius:var(--r-sm);
+  width:100%; min-height:54px; border:0; border-radius:999px;
   font-size:16px; font-weight:700; letter-spacing:.04em; text-decoration:none; margin-top:14px;
   transition:transform .12s, opacity .15s, box-shadow .15s}
 .btn:active,.btn-sub:active,.menu button:active,.kits .kb:active,.hist button:active{transform:scale(.98)}
-.btn-primary{background:var(--accent); color:var(--accent-ink); box-shadow:0 6px 16px rgba(22,24,29,.18)}
+.btn-primary{background:var(--accent); color:var(--accent-ink); box-shadow:0 6px 16px rgba(214,42,54,.22)}
 .btn-primary:disabled{opacity:.4; box-shadow:none}
 .btn-line{background:var(--line-green); color:#fff; box-shadow:0 6px 16px rgba(6,199,85,.25)}
 .btn-line::before{content:""; width:22px; height:22px; flex:none; background:no-repeat center/contain
   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fff' d='M12 3C6.5 3 2 6.6 2 11c0 3.9 3.5 7.2 8.3 7.9.3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.6s5.9-3.5 8-6c1.5-1.6 2-3.2 2-4.9C22 6.6 17.5 3 12 3z'/%3E%3C/svg%3E")}
 .line-ico{background:#fff;color:var(--line-green);border-radius:5px;padding:1px 6px;font-size:12px;font-weight:800}
 .btn-sub{display:flex; align-items:center; justify-content:center; width:100%; min-height:50px;
-  margin-top:10px; border:1.5px solid var(--line); background:var(--card); border-radius:var(--r-sm);
-  font-size:14px; font-weight:600; color:var(--ink); text-decoration:none; transition:transform .12s}
+  margin-top:10px; border:1.5px solid var(--pink-line); background:var(--card); border-radius:999px;
+  font-size:14px; font-weight:600; color:var(--red-ink); text-decoration:none; transition:transform .12s}
 .sep{position:relative;text-align:center;margin:22px 0 6px;color:var(--mute);font-size:12px}
 .sep::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px solid var(--line)}
 .sep span{position:relative;background:var(--card);padding:0 10px}
@@ -137,37 +140,38 @@ body[data-page="mypage"] .cta{bottom:calc(var(--tab-h) + 10px + env(safe-area-in
 .greet-sub::before{content:""; width:7px; height:7px; border-radius:50%; background:var(--line-green);
   box-shadow:0 0 0 3px rgba(6,199,85,.18)}
 
-/* ---- 案件カード（上半分は濃い色のヒーロー） ---- */
+/* ---- 案件カード（上半分は淡いピンクのヒーロー。右上に肉球をひとつ） ---- */
 .card.case{padding:0; overflow:hidden}
-.case-hero{padding:var(--pad) var(--pad) 20px; color:#fff;
-  background:radial-gradient(120% 140% at 100% 0%,rgba(176,141,87,.28) 0%,rgba(176,141,87,0) 55%),
-             linear-gradient(160deg,var(--hero1),var(--hero2))}
-.case-hero .t2{color:rgba(255,255,255,.62); margin:0 0 12px}
+.case-hero{padding:var(--pad) var(--pad) 20px; color:var(--ink); position:relative;
+  background:linear-gradient(160deg,var(--hero1),var(--hero2))}
+.case-hero::after{content:""; position:absolute; right:14px; top:10px; width:34px; height:34px; opacity:.55;
+  background:no-repeat center/contain
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23d62a36'%3E%3Cellipse cx='7' cy='8' rx='2.2' ry='3'/%3E%3Cellipse cx='17' cy='8' rx='2.2' ry='3'/%3E%3Cellipse cx='3.5' cy='13' rx='1.9' ry='2.6'/%3E%3Cellipse cx='20.5' cy='13' rx='1.9' ry='2.6'/%3E%3Cpath d='M12 11.5c3.5 0 6.5 3 6.5 6 0 2-1.5 3-3 3-1.2 0-2.3-.6-3.5-.6s-2.3.6-3.5.6c-1.5 0-3-1-3-3 0-3 3-6 6.5-6z'/%3E%3C/svg%3E")}
+.case-hero .t2{color:var(--red-ink); margin:0 0 12px}
 .case-body{padding:2px var(--pad) var(--pad)}
 .card .case-body > .t2:first-child{margin-top:20px}
 .case-hd{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .rcpt{font-size:13px;color:var(--sub);font-variant-numeric:tabular-nums;letter-spacing:.04em}
-.case-hero .rcpt{color:rgba(255,255,255,.88); font-size:15px; font-weight:700}
+.case-hero .rcpt{color:var(--ink); font-size:15px; font-weight:700}
 .pill{font-size:12px;font-weight:700;color:#fff;background:var(--sub);
-  border-radius:999px;padding:4px 12px;white-space:nowrap;letter-spacing:.04em;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+  border-radius:999px;padding:4px 12px;white-space:nowrap;letter-spacing:.04em}
 
 /* フロー帯（ステータスは必ず帯で見せる）：点と線のステップ */
 .flow{display:flex; list-style:none; margin:18px 0 2px; padding:0}
 .flow li{flex:1 1 0; min-width:0; white-space:nowrap; text-align:center; font-size:9.5px;
-  color:rgba(255,255,255,.5); position:relative; padding-top:20px; line-height:1.3; margin:0}
+  color:var(--mute); position:relative; padding-top:20px; line-height:1.3; margin:0}
 .flow li::before{content:""; position:absolute; top:2px; left:50%; transform:translateX(-50%);
-  width:11px; height:11px; border-radius:50%; background:#3b4049; z-index:1;
-  box-shadow:0 0 0 3px var(--hero2)}
-.flow li::after{content:""; position:absolute; top:7px; left:50%; width:100%; height:2px;
-  background:rgba(255,255,255,.14)}
+  width:11px; height:11px; border-radius:50%; background:#fff; z-index:1;
+  box-shadow:0 0 0 2px var(--pink-line)}
+.flow li::after{content:""; position:absolute; top:7px; left:50%; width:100%; height:0;
+  border-top:2px dotted var(--pink-line)}
 .flow li:last-child::after{display:none}
-.flow li.done{color:rgba(255,255,255,.72); font-weight:400}
-.flow li.done::before{background:var(--gold)}
-.flow li.done::after{background:var(--gold)}
-.flow li.now{color:#fff; font-weight:700}
-.flow li.now::before{background:#fff; width:13px; height:13px; top:1px;
-  box-shadow:0 0 0 3px var(--hero2),0 0 0 6px rgba(176,141,87,.6)}
+.flow li.done{color:var(--sub); font-weight:400}
+.flow li.done::before{background:var(--red); box-shadow:0 0 0 2px var(--red)}
+.flow li.done::after{border-top:2px solid var(--red)}
+.flow li.now{color:var(--red-ink); font-weight:700}
+.flow li.now::before{background:var(--red); width:13px; height:13px; top:1px;
+  box-shadow:0 0 0 3px #fff,0 0 0 5px var(--red)}
 
 .kv{display:flex; margin:0; padding:16px 0; gap:0; border-bottom:1px solid var(--line)}
 .kv>div{flex:1; text-align:center; position:relative}
@@ -176,13 +180,13 @@ body[data-page="mypage"] .cta{bottom:calc(var(--tab-h) + 10px + env(safe-area-in
 .kv dd{margin:3px 0 0; font-size:14.5px; font-weight:700; line-height:1.45; word-break:keep-all}
 
 .amount{display:flex;align-items:baseline;justify-content:space-between;
-  margin-top:6px;padding:14px 16px;border-radius:var(--r-sm);background:var(--gold-soft);
-  font-size:12px;color:var(--gold-ink);font-weight:700}
-.amount b{font-size:24px;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:.01em}
+  margin-top:6px;padding:14px 16px;border-radius:var(--r-sm);background:var(--pink);
+  font-size:12px;color:var(--red-ink);font-weight:700}
+.amount b{font-size:24px;color:var(--red);font-variant-numeric:tabular-nums;letter-spacing:.01em}
 .total{text-align:center;padding:18px 0 4px}
 .total b{display:block;font-size:38px;line-height:1.2;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.01em}
 .total span{font-size:12px;opacity:.7}
-.case-hero .total b{color:#fff}
+.case-hero .total b{color:var(--red)}
 
 /* ---- 警告カード ---- */
 .alert{background:var(--warn-soft); box-shadow:none; border:1px solid #f3dfb8; position:relative; padding-left:56px}
@@ -205,8 +209,8 @@ body[data-page="mypage"] .cta{bottom:calc(var(--tab-h) + 10px + env(safe-area-in
   gap:12px; padding:13px 0; border-bottom:1px solid var(--line)}
 .items li:last-child{border-bottom:0}
 .items li:not(.empty)::before{content:""; flex:none; width:36px; height:36px; border-radius:10px;
-  background:var(--gold-soft) no-repeat center/18px
-  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b08d57' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 7h12l1 13H5L6 7z'/%3E%3Cpath d='M9 7a3 3 0 0 1 6 0'/%3E%3C/svg%3E")}
+  background:var(--pink) no-repeat center/18px
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d62a36' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 7h12l1 13H5L6 7z'/%3E%3Cpath d='M9 7a3 3 0 0 1 6 0'/%3E%3C/svg%3E")}
 .items .nm{flex:1; min-width:0}
 .items .nm b{display:block; font-weight:700; font-size:14px; line-height:1.45}
 .items .nm em{font-style:normal; font-size:11px; color:var(--mute)}
@@ -214,7 +218,7 @@ body[data-page="mypage"] .cta{bottom:calc(var(--tab-h) + 10px + env(safe-area-in
 .items li.empty{display:block; padding:22px 8px; line-height:1.7}
 .items.edit li::before{display:none}
 .items.edit input{width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:12px; background:var(--card)}
-.comment p{background:var(--gold-soft);border-radius:4px 16px 16px 16px;padding:14px;font-size:13.5px;
+.comment p{background:var(--pink);border-radius:4px 16px 16px 16px;color:var(--ink);padding:14px;font-size:13.5px;
   margin:0;white-space:pre-wrap;line-height:1.75}
 .bank{font-size:14px;margin:0;padding:12px 14px;border-radius:12px;background:var(--bg);font-weight:600}
 
@@ -237,7 +241,7 @@ p.done{color:var(--ok);font-weight:700;text-align:center;margin:16px 0 0;backgro
   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6f76' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")}
 .form input[type="date"]{line-height:52px}
 .form input::placeholder{color:#b6b9bf}
-.form input:focus,.form select:focus{border-color:var(--ink); box-shadow:0 0 0 4px var(--gold-soft)}
+.form input:focus,.form select:focus{border-color:var(--red); box-shadow:0 0 0 4px var(--pink)}
 .form input:disabled{background:var(--bg); color:var(--mute)}
 .row{display:flex; gap:10px}
 .row>label{flex:1; min-width:0}
@@ -249,7 +253,7 @@ p.done{color:var(--ok);font-weight:700;text-align:center;margin:16px 0 0;backgro
   border-radius:var(--r-sm); background:var(--bg) center/cover no-repeat; color:var(--sub);
   font-size:12px; font-weight:400; position:relative; overflow:hidden; transition:border-color .15s}
 .shot-box::before{content:""; width:30px; height:30px; background:no-repeat center/contain
-  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b08d57' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 8h3l2-3h6l2 3h3v11H4z'/%3E%3Ccircle cx='12' cy='13' r='3.5'/%3E%3C/svg%3E")}
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d62a36' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 8h3l2-3h6l2 3h3v11H4z'/%3E%3Ccircle cx='12' cy='13' r='3.5'/%3E%3C/svg%3E")}
 .shot-box b{font-size:14px; color:var(--ink)}
 .shot-box em{font-style:normal}
 .shot-box.set{border-style:solid; border-color:var(--ok); background-color:var(--ok-soft)}
@@ -264,7 +268,7 @@ p.done{color:var(--ok);font-weight:700;text-align:center;margin:16px 0 0;backgro
 .segs{display:flex; gap:0; margin:6px 0 6px; padding:3px; background:var(--bg); border-radius:12px}
 .segs button{flex:1; padding:8px 0; border:0; background:none; border-radius:10px;
   font-size:13px; color:var(--sub); font-weight:600; transition:background .15s, color .15s}
-.segs button.on{background:var(--card); color:var(--ink); font-weight:700; box-shadow:0 1px 4px rgba(22,24,29,.12)}
+.segs button.on{background:var(--card); color:var(--red-ink); font-weight:700; box-shadow:0 1px 4px rgba(120,60,60,.12)}
 .hist{list-style:none; margin:8px 0 0; padding:0}
 .hist li{padding:14px 0; border-bottom:1px solid var(--line)}
 .hist li:last-child{border-bottom:0}
@@ -276,9 +280,9 @@ p.done{color:var(--ok);font-weight:700;text-align:center;margin:16px 0 0;backgro
 .hist button{background:none;border:0;padding:0;width:100%;text-align:left;transition:transform .12s}
 
 /* ---- フォーム1 ---- */
-.steps{display:inline-flex; align-items:center; gap:6px; font-size:11px; color:var(--gold-ink);
-  letter-spacing:.06em; margin-bottom:8px; background:var(--gold-soft); border-radius:999px; padding:3px 12px; font-weight:600}
-.steps b{color:var(--gold-ink)}
+.steps{display:inline-flex; align-items:center; gap:6px; font-size:11px; color:var(--red-ink);
+  letter-spacing:.06em; margin-bottom:8px; background:var(--pink); border-radius:999px; padding:3px 12px; font-weight:600}
+.steps b{color:var(--red-ink)}
 .req{font-style:normal;font-size:10px;font-weight:700;background:var(--danger-soft);color:var(--danger);
   border-radius:6px;padding:2px 6px;margin-left:6px;vertical-align:1px;letter-spacing:.04em}
 .kits{display:flex;gap:10px;margin-top:4px}
@@ -291,24 +295,24 @@ p.done{color:var(--ok);font-weight:700;text-align:center;margin:16px 0 0;backgro
   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239a9ea6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7.5L12 3l9 4.5v9L12 21l-9-4.5z'/%3E%3Cpath d='M3 7.5l9 4.5 9-4.5M12 12v9'/%3E%3C/svg%3E")}
 .kits .kb b{font-size:16px}
 .kits .kb em{font-style:normal;font-size:11px;color:var(--mute);font-weight:400}
-.kits input:checked + .kb{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink),0 6px 16px rgba(22,24,29,.08)}
-.kits input:checked + .kb::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b08d57' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7.5L12 3l9 4.5v9L12 21l-9-4.5z'/%3E%3Cpath d='M3 7.5l9 4.5 9-4.5M12 12v9'/%3E%3C/svg%3E")}
+.kits input:checked + .kb{border-color:var(--red);box-shadow:0 0 0 1px var(--red),0 6px 16px rgba(214,42,54,.1)}
+.kits input:checked + .kb::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d62a36' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7.5L12 3l9 4.5v9L12 21l-9-4.5z'/%3E%3Cpath d='M3 7.5l9 4.5 9-4.5M12 12v9'/%3E%3C/svg%3E")}
 .kits input:checked + .kb::after{content:"✓"; position:absolute; top:6px; right:6px; width:18px; height:18px;
-  border-radius:50%; background:var(--ink); color:#fff; font-size:11px; line-height:18px; text-align:center; font-weight:800}
-.kits input:checked + .kb em{color:var(--gold-ink); font-weight:700}
+  border-radius:50%; background:var(--red); color:#fff; font-size:11px; line-height:18px; text-align:center; font-weight:800}
+.kits input:checked + .kb em{color:var(--red-ink); font-weight:700}
 .consent{list-style:none;margin:4px 0 0;padding:14px 16px;background:var(--bg);
   border-radius:var(--r-sm);font-size:12.5px;color:var(--sub)}
 .consent li{padding:4px 0 4px 20px;position:relative;line-height:1.6}
 .consent li::before{content:""; position:absolute; left:2px; top:11px; width:8px; height:5px;
-  border-left:2px solid var(--gold); border-bottom:2px solid var(--gold); transform:rotate(-45deg)}
-.consent a{color:var(--ink); font-weight:700; text-decoration:underline; text-underline-offset:2px}
+  border-left:2px solid var(--red); border-bottom:2px solid var(--red); transform:rotate(-45deg)}
+.consent a{color:var(--red-ink); font-weight:700; text-decoration:underline; text-underline-offset:2px}
 .chk{display:flex!important;align-items:center;gap:12px;margin-top:14px!important;padding:14px 16px;
   border:1.5px solid var(--line);border-radius:var(--r-sm);font-size:14.5px;font-weight:700;color:var(--ink);
   background:var(--card); transition:border-color .15s}
-.chk:has(input:checked){border-color:var(--ink)}
+.chk:has(input:checked){border-color:var(--red)}
 .chk input{width:24px!important;height:24px!important;margin:0!important;padding:0!important;flex:none;
   border-radius:7px!important;border:1.5px solid #c9c5bd!important;position:relative;background:var(--card)}
-.chk input:checked{background:var(--ink);border-color:var(--ink)!important}
+.chk input:checked{background:var(--red);border-color:var(--red)!important}
 .chk input:checked::after{content:""; position:absolute; left:7px; top:3px; width:6px; height:11px;
   border:solid #fff; border-width:0 2.5px 2.5px 0; transform:rotate(45deg)}
 
@@ -317,13 +321,13 @@ p.done{color:var(--ok);font-weight:700;text-align:center;margin:16px 0 0;backgro
   background:var(--ok);color:#fff;font-size:36px;line-height:72px;font-weight:800;
   box-shadow:0 0 0 10px var(--ok-soft); animation:pop .45s cubic-bezier(.2,1.4,.4,1) both}
 @keyframes pop{from{transform:scale(.4); opacity:0} to{transform:none; opacity:1}}
-.rcptbox{border:1.5px dashed #d8d2c7;border-radius:var(--r-sm);padding:14px;margin:16px 0 8px;background:var(--gold-soft)}
-.rcptbox span{display:block;font-size:11px;color:var(--gold-ink);letter-spacing:.08em;font-weight:700}
+.rcptbox{border:1.5px dashed var(--pink-line);border-radius:var(--r-sm);padding:14px;margin:16px 0 8px;background:var(--pink)}
+.rcptbox span{display:block;font-size:11px;color:var(--red-ink);letter-spacing:.08em;font-weight:700}
 .rcptbox b{font-size:24px;font-variant-numeric:tabular-nums;letter-spacing:.04em}
 .flowlist{list-style:none;margin:6px 0 0;padding:0;text-align:left;position:relative}
 .flowlist li{display:flex;gap:14px;align-items:flex-start;padding:10px 0;font-size:13.5px;position:relative}
 .flowlist li:not(:last-child)::after{content:""; position:absolute; left:13px; top:38px; bottom:-6px; width:2px; background:var(--line)}
-.flowlist b{flex:none;width:28px;height:28px;border-radius:50%;background:var(--ink);
+.flowlist b{flex:none;width:28px;height:28px;border-radius:50%;background:var(--red);
   color:#fff;font-size:12px;line-height:28px;text-align:center}
 .flowlist span{padding-top:3px}
 
@@ -340,7 +344,7 @@ p.done{color:var(--ok);font-weight:700;text-align:center;margin:16px 0 0;backgro
 .field-err{color:var(--danger);font-size:12px;margin:6px 0 0;font-weight:600}
 a.btn{text-decoration:none;margin-top:12px}
 .card + .btn-line,.menu + .btn-line{margin-top:6px}
-.prefill{background:var(--gold-soft);border-radius:12px;padding:10px 14px;font-size:12.5px;color:var(--gold-ink);
+.prefill{background:var(--pink);border-radius:12px;padding:10px 14px;font-size:12.5px;color:var(--red-ink);
   margin:0 0 12px;font-weight:600}
 
 /* 銀行・支店の検索リスト（お振込先） */
@@ -356,7 +360,7 @@ a.btn{text-decoration:none;margin-top:12px}
   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f8a5b' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E")}
 
 /* ---- 確認シート・お知らせ（ブラウザ標準の confirm / alert の代わり） ---- */
-.sheet-bg{position:fixed; inset:0; z-index:120; background:rgba(15,16,20,.45); display:flex; align-items:flex-end;
+.sheet-bg{position:fixed; inset:0; z-index:120; background:rgba(60,30,30,.4); display:flex; align-items:flex-end;
   justify-content:center; animation:fade .2s ease both}
 .sheet{width:100%; max-width:520px; background:var(--card); border-radius:24px 24px 0 0;
   padding:22px var(--pad) calc(18px + env(safe-area-inset-bottom)); animation:up .28s cubic-bezier(.2,.8,.2,1) both}
@@ -367,7 +371,7 @@ a.btn{text-decoration:none;margin-top:12px}
 @keyframes fade{from{opacity:0}}
 @keyframes up{from{transform:translateY(100%)}}
 .toast{position:fixed; left:50%; z-index:130; bottom:calc(var(--tab-h) + 22px + env(safe-area-inset-bottom));
-  transform:translateX(-50%); max-width:calc(100% - 32px); background:var(--ink); color:#fff; font-size:13.5px;
+  transform:translateX(-50%); max-width:calc(100% - 32px); background:var(--red-ink); color:#fff; font-size:13.5px;
   font-weight:600; padding:12px 18px; border-radius:14px; box-shadow:var(--shadow-lg); animation:toast 3s ease both}
 body[data-page="apply"] .toast{bottom:calc(22px + env(safe-area-inset-bottom))}
 @keyframes toast{0%{opacity:0; transform:translate(-50%,10px)} 8%,85%{opacity:1; transform:translate(-50%,0)} 100%{opacity:0}}
@@ -375,9 +379,9 @@ body[data-page="apply"] .toast{bottom:calc(22px + env(safe-area-inset-bottom))}
 /* ---- マイページを開いた瞬間の枠（スケルトン）。値の場所だけ灰色の帯を光らせる。押せない ---- */
 .skel button,.skel a{pointer-events:none}
 .sk{display:inline-block; height:.9em; vertical-align:middle; border-radius:6px;
-  background:linear-gradient(90deg,#e4e0d9 25%,#f3f1ed 37%,#e4e0d9 63%); background-size:400% 100%;
+  background:linear-gradient(90deg,#f0e4e2 25%,#faf3f2 37%,#f0e4e2 63%); background-size:400% 100%;
   animation:sk-shine 1.4s ease infinite}
-.case-hero .sk{background-image:linear-gradient(90deg,rgba(255,255,255,.1) 25%,rgba(255,255,255,.24) 37%,rgba(255,255,255,.1) 63%)}
+.case-hero .sk{background-image:linear-gradient(90deg,rgba(255,255,255,.5) 25%,rgba(255,255,255,.9) 37%,rgba(255,255,255,.5) 63%)}
 .sk-pill{width:5em; height:1.6em; border-radius:999px}
 /* よく見るスケルトンの動き（光が左から右へ流れる） */
 @keyframes sk-shine{from{background-position:100% 50%} to{background-position:0 50%}}
@@ -386,22 +390,20 @@ body[data-page="apply"] .toast{bottom:calc(22px + env(safe-area-inset-bottom))}
 
 /* ---- ダークモード（端末の設定に合わせる） ---- */
 @media (prefers-color-scheme: dark){
-  :root{--bg:#0f1013; --card:#191b20; --ink:#eef0f3; --sub:#a3a8b1; --mute:#7c818b; --line:#2a2d34;
-        --accent:#f2efe9; --accent-ink:#16181d; --gold-soft:#2a241a; --gold-ink:#d8b98a;
-        --ok-soft:#12251c; --warn-soft:#2a2112; --danger-soft:#2c1717;
-        --hero1:#262a32; --hero2:#121418;
+  :root{--bg:#161213; --card:#211b1c; --ink:#f3ecea; --sub:#b4a6a3; --mute:#857876; --line:#352a2b;
+        --accent:#e2404b; --accent-ink:#fff; --pink:#3a2426; --pink-line:#5a3539; --red:#ef5560; --red-ink:#f2a3a9;
+        --ok-soft:#1a2a18; --warn-soft:#2a2112; --danger-soft:#2c1717;
+        --hero1:#3a2426; --hero2:#2b1d1f;
         --shadow:0 1px 2px rgba(0,0,0,.3); --shadow-lg:0 12px 40px rgba(0,0,0,.5)}
-  .hd{background:rgba(15,16,19,.82); border-bottom-color:rgba(255,255,255,.06)}
-  .tabbar{background:rgba(25,27,32,.88); border-top-color:rgba(255,255,255,.06)}
-  .busy{background:rgba(15,16,19,.6)}
-  .busy .spinner{box-shadow:0 0 0 10px rgba(25,27,32,.95); background:rgba(25,27,32,.95)}
+  .hd{background:rgba(22,18,19,.86); border-bottom-color:rgba(255,255,255,.06)}
+  .tabbar{background:rgba(33,27,28,.9); border-top-color:rgba(255,255,255,.06)}
+  .busy{background:rgba(22,18,19,.6)}
+  .busy .spinner{box-shadow:0 0 0 10px rgba(33,27,28,.95); background:rgba(33,27,28,.95)}
   .alert{border-color:#4a3a1c} .alert .t2{color:#e7b866} .alert p{color:#d9c3a0}
   .form input::placeholder{color:#5f646d}
   .shot-box{border-color:#3a3d45}
   .chk input{border-color:#4a4d55!important}
-  .chk input:checked::after{border-color:#16181d}
   .rcptbox{border-color:#4a4030}
-  .flowlist b{color:#16181d}
-  .toast{background:#f2efe9; color:#16181d}
-  .sk{background-image:linear-gradient(90deg,#24272d 25%,#30343b 37%,#24272d 63%)}
+  .sk{background-image:linear-gradient(90deg,#2d2325 25%,#3a2e30 37%,#2d2325 63%)}
+  .flow li.now::before{box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--red)}
 }
