@@ -106,7 +106,8 @@
 <template id="tpl-case">
   <button class="back" data-view="top">‹ もどる</button>
   <section class="card case">
-    <div class="case-hero">
+    <!-- 明細のヒーローは見出しが無く、右上にステータスが来るので肉球を出さない（261017 実機で重なった） -->
+    <div class="case-hero plain">
       <div class="case-hd">
         <span class="rcpt" data-f="受付番号"></span>
         <span class="pill" data-f="案件ステータス"></span>
