@@ -88,7 +88,8 @@ button.hd-logo{background:none; border:0; padding:4px 0; color:inherit}
 /* 通信中に画面へ薄くかぶせる白（押せないようにして二度押しを防ぐ） */
 .busy{position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center;
   background:rgba(251,248,244,.62); opacity:0; visibility:hidden; transition:opacity .18s, visibility .18s}
-.busy .spinner{box-shadow:0 0 0 10px rgba(255,255,255,.9); background:rgba(255,255,255,.9)}
+/* 円の地は画面の地色と同じにする（白だとクリーム地の上で円が浮く。261017 実機） */
+.busy .spinner{box-shadow:0 0 0 10px rgba(251,248,244,.92); background:rgba(251,248,244,.92)}
 .busy.on{opacity:1; visibility:visible}
 
 .card{background:var(--card); border-radius:var(--r); padding:var(--pad);
@@ -398,7 +399,7 @@ body[data-page="apply"] .toast{bottom:calc(22px + env(safe-area-inset-bottom))}
   .hd{background:rgba(22,18,19,.86); border-bottom-color:rgba(255,255,255,.06)}
   .tabbar{background:rgba(33,27,28,.9); border-top-color:rgba(255,255,255,.06)}
   .busy{background:rgba(22,18,19,.6)}
-  .busy .spinner{box-shadow:0 0 0 10px rgba(33,27,28,.95); background:rgba(33,27,28,.95)}
+  .busy .spinner{box-shadow:0 0 0 10px rgba(22,18,19,.92); background:rgba(22,18,19,.92)}
   .alert{border-color:#4a3a1c} .alert .t2{color:#e7b866} .alert p{color:#d9c3a0}
   .form input::placeholder{color:#5f646d}
   .shot-box{border-color:#3a3d45}
